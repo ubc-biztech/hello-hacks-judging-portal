@@ -6,16 +6,19 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed:judges": "tsx scripts/seed-judges.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",
     "classnames": "^2.5.1",
+    "dotenv": "^17.2.3",
     "firebase": "^12.3.0",
     "next": "15.5.4",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "tsx": "^4.20.6"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
