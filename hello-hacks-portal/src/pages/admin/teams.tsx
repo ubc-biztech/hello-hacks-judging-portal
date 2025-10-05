@@ -16,6 +16,7 @@ import {
   updateDoc
 } from "firebase/firestore";
 import { getSession } from "@/lib/session";
+import Link from "next/link";
 
 type Team = {
   id: string;
@@ -329,6 +330,12 @@ function EditableTeamRow({
 
       <td className="px-4 py-3">
         <div className="flex flex-col gap-2">
+          <Link
+            href={`/admin/teams/${t.id}`}
+            className="rounded-lg border border-gray-200 px-3 py-1 text-xs text-center dark:border-white/10"
+          >
+            View
+          </Link>
           <button
             className="rounded-lg border border-gray-200 px-3 py-1 text-xs dark:border-white/10"
             onClick={() => onSave(edit)}
