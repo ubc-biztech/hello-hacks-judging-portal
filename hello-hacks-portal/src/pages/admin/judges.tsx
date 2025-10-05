@@ -1,5 +1,7 @@
+// pages/admin/judges.tsx
 "use client";
 
+import dynamic from "next/dynamic";
 import Layout from "@/components/Layout";
 import RoleGate from "@/components/RoleGate";
 import { useEffect, useState } from "react";
@@ -25,7 +27,7 @@ type Judge = {
   capacity?: number;
 };
 
-export default function AdminJudges() {
+function AdminJudgesInner() {
   return (
     <RoleGate allow={["admin"]}>
       <Layout>
@@ -40,6 +42,7 @@ function Page() {
   const [loading, setLoading] = useState(true);
   const [newJ, setNewJ] = useState({ name: "", code: "", isAdmin: false });
 
+  // IMPORTANT: ensure getSession() is browser-safe (see note below)
   const admin = getSession() as any; // { role:'admin', adminCode, name }
 
   async function load() {
@@ -261,3 +264,5 @@ function Row({
     </tr>
   );
 }
+
+export default dynamic(() => Promise.resolve(AdminJudgesInner), { ssr: false });

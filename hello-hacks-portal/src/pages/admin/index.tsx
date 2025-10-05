@@ -1,8 +1,11 @@
+"use client";
+
+import dynamic from "next/dynamic";
 import Layout from "@/components/Layout";
 import RoleGate from "@/components/RoleGate";
 import Link from "next/link";
 
-export default function AdminHome() {
+function AdminHome() {
   return (
     <RoleGate allow={["admin"]}>
       <Layout>
@@ -72,3 +75,5 @@ export default function AdminHome() {
     </RoleGate>
   );
 }
+
+export default dynamic(() => Promise.resolve(AdminHome), { ssr: false });
