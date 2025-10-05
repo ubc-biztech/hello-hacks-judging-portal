@@ -1,18 +1,45 @@
-import { initializeApp, getApps } from "firebase/app";
+// lib/firebase.ts
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
+const EVENT_ID_ENV = process.env.NEXT_PUBLIC_EVENT_ID;
+const API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+const AUTH_DOMAIN = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
+const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+const STORAGE_BUCKET = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+const MSG_SENDER_ID = process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID;
+const APP_ID = process.env.NEXT_PUBLIC_FIREBASE_APP_ID;
+
+if (
+  !EVENT_ID_ENV ||
+  !API_KEY ||
+  !AUTH_DOMAIN ||
+  !PROJECT_ID ||
+  !STORAGE_BUCKET ||
+  !MSG_SENDER_ID ||
+  !APP_ID
+) {
+  if (typeof window !== "undefined") {
+    console.error(
+      "Missing required Firebase env vars. Check NEXT_PUBLIC_* in your Vercel project settings."
+    );
+  }
+}
+
 const firebaseConfig = {
-  apiKey: "AIzaSyAYLgu-GxZCWFdrZOm2wtNZqUTURSqhsjU",
-  authDomain: "hello-hacks-judging-2025.firebaseapp.com",
-  projectId: "hello-hacks-judging-2025",
-  storageBucket: "hello-hacks-judging-2025.firebasestorage.app",
-  messagingSenderId: "343524546147",
-  appId: "1:343524546147:web:db1557d8b38bee5e99ca56"
+  apiKey: API_KEY,
+  authDomain: AUTH_DOMAIN,
+  projectId: PROJECT_ID,
+  storageBucket: STORAGE_BUCKET,
+  messagingSenderId: MSG_SENDER_ID,
+  appId: APP_ID
 };
 
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+
 export const db = getFirestore(app);
+
 export const storage = getStorage(app);
 
-export const EVENT_ID = "hello-hacks-2025";
+export const EVENT_ID = EVENT_ID_ENV || "hello-hacks-2025";
