@@ -261,6 +261,105 @@ function Page() {
     return ["all", ...Array.from(s)];
   }, [teams]);
 
+  function csvCell(s: string | number | null | undefined) {
+    const str = s == null ? "" : String(s);
+    return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+  }
+
+  function exportCsv() {
+    const js = filteredJudges;
+    const ts = filteredTeamsAll;
+
+    const lines: string[] = [];
+    const now = new Date().toISOString();
+
+    lines.push(`Event,${csvCell(EVENT_ID)}`);
+    lines.push(`Generated At,${csvCell(now)}`);
+    lines.push(`Required Judges Per Team,${csvCell(requiredPerTeam)}`);
+    lines.push("");
+
+    lines.push("Judges");
+    lines.push("JudgeId,JudgeName,AssignedCount,Capacity");
+    js.forEach((j) => {
+      lines.push(
+        [
+          csvCell(j.id),
+          csvCell(j.name),
+          csvCell(j.assignedTeamIds?.length || 0),
+          csvCell(j.capacity ?? "")
+        ].join(",")
+      );
+    });
+    lines.push("");
+
+    lines.push("Teams Coverage");
+    lines.push("TeamId,TeamName,Coverage,MeetsTarget");
+    ts.forEach((t) => {
+      const cov = coverage[t.id] || 0;
+      const ok = cov >= requiredPerTeam ? "yes" : "no";
+      lines.push(
+        [csvCell(t.id), csvCell(t.name), csvCell(cov), csvCell(ok)].join(",")
+      );
+    });
+    lines.push("");
+
+    lines.push("Assignment Matrix (1=assigned,0=not)");
+    const header = ["JudgeId/TeamId", ...ts.map((t) => t.id)];
+    lines.push(header.map(csvCell).join(","));
+    js.forEach((j) => {
+      const row = [
+        j.id,
+        ...ts.map((t) => ((j.assignedTeamIds || []).includes(t.id) ? 1 : 0))
+      ];
+      lines.push(row.map(csvCell).join(","));
+    });
+
+    const blob = new Blob([lines.join("\n")], {
+      type: "text/csv;charset=utf-8"
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${EVENT_ID}-assignments-${new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportJson() {
+    const js = filteredJudges.map((j) => ({
+      id: j.id,
+      name: j.name,
+      capacity: j.capacity ?? null,
+      assignedTeamIds: j.assignedTeamIds || []
+    }));
+    const ts = filteredTeamsAll.map((t) => ({
+      id: t.id,
+      name: t.name,
+      track: t.track || null,
+      coverage: coverage[t.id] || 0
+    }));
+    const payload = {
+      eventId: EVENT_ID,
+      generatedAt: new Date().toISOString(),
+      requiredPerTeam,
+      judges: js,
+      teams: ts
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json;charset=utf-8"
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${EVENT_ID}-assignments-${new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="mx-auto max-w-[min(1400px,100%)] p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -293,6 +392,20 @@ function Page() {
             className="rounded-lg border border-gray-200 px-4 py-2 text-sm dark:border-white/10"
           >
             Clear all
+          </button>
+          <button
+            onClick={exportCsv}
+            className="rounded-lg border border-gray-200 px-4 py-2 text-sm dark:border-white/10"
+            title="Download the full judge x team assignment matrix as CSV"
+          >
+            Export CSV
+          </button>
+          <button
+            onClick={exportJson}
+            className="rounded-lg border border-gray-200 px-4 py-2 text-sm dark:border-white/10"
+            title="Download a structured JSON snapshot"
+          >
+            Export JSON
           </button>
         </div>
       </div>

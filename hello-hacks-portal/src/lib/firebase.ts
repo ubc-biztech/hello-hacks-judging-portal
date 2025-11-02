@@ -42,4 +42,4 @@ export const db = getFirestore(app);
 
 export const storage = getStorage(app);
 
-export const EVENT_ID = EVENT_ID_ENV || "hello-hacks-2025";
+export const EVENT_ID = EVENT_ID_ENV || "ux-open-2025";

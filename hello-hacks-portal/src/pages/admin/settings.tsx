@@ -30,7 +30,7 @@ export default function AdminSettings() {
 function Page() {
   const ref = doc(db, "events", EVENT_ID);
   const [s, setS] = useState<Settings>({
-    name: "Hello Hacks",
+    name: "UX Open",
     requiredJudgeCount: 3,
     maxImages: 10,
     lockSubmissions: false,
