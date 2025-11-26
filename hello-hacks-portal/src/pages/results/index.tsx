@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // pages/results.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import {
   collection,
@@ -54,8 +56,14 @@ export default function Results() {
 
   const isAdmin = ready && session?.role === "admin";
   const allowJudgeSeeOthers = !!settings?.allowJudgeSeeOthers;
+  const isTeam = ready && session?.role === "team";
+  const router = useRouter();
 
   useEffect(() => {
+    if (isTeam) {
+      router.replace("/team/feedback");
+      return;
+    }
     (async () => {
       // Settings
       const s = await getDoc(doc(db, "events", EVENT_ID));
@@ -90,7 +98,7 @@ export default function Results() {
       });
       setReviewsByTeam(byTeam);
     })();
-  }, []);
+  }, [isTeam, router]);
 
   // Aggregate for current tab only
   useEffect(() => {
@@ -177,7 +185,6 @@ export default function Results() {
     );
   }
 
-  // NEW: Export every review with per-criterion scores
   function exportDetailedCsv() {
     const crits = rubric?.criteria || [];
     const columns = [
@@ -247,6 +254,10 @@ export default function Results() {
   function nf(n: any) {
     const x = Number(n);
     return Number.isFinite(x) ? x.toFixed(4) : "";
+  }
+
+  if (isTeam) {
+    return null;
   }
 
   /* ----------------- UI ----------------- */

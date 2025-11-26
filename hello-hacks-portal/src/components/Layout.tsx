@@ -62,7 +62,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                   onClick={() => setSidebarOpen(false)}
                   className="text-base font-semibold"
                 >
-                  UX Open
+                  KickStart
                 </Link>
                 <button
                   onClick={() => setSidebarOpen(false)}
@@ -105,7 +105,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       {/* Desktop static sidebar */}
       <div className="hidden xl:fixed xl:inset-y-0 xl:z-40 xl:flex xl:w-72 xl:flex-col">
         <div className="flex grow flex-col gap-y-6 overflow-y-auto bg-gray-50 px-6 py-5 ring-1 ring-gray-200 dark:bg-black/10 dark:ring-white/10">
-          <div className="text-base font-semibold">UX Open</div>
+          <div className="text-base font-semibold">KickStart</div>
           <nav>
             <ul className="space-y-1">
               {nav.map((item) => (
@@ -157,9 +157,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             <Link
               href="/"
               className="text-sm font-semibold text-indigo-600 dark:text-indigo-400"
-            >
-              UX Open Portal
-            </Link>
+            ></Link>
           </div>
 
           {/* Right: identity / auth */}

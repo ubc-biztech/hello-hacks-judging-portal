@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -12,40 +13,39 @@ import {
   writeBatch
 } from "firebase/firestore";
 
-/** >>>>>>> YOUR TEAM DATA (edit here if needed) <<<<<<< */
+/** >>>>>>> YOUR TEAM DATA (updated) <<<<<<< */
 const RAW_TEAMS: { name: string; members: string[] }[] = [
-  { name: "MiGoreng", members: ["Longman", "Ethan", "Kelyn", "Benjamin"] },
-  { name: "JESK", members: ["Jon", "Ethan", "Simon", "Kijoo"] },
-  { name: "ZIP", members: ["Philippe", "Zach", "Irene"] },
+  // Block 1
+  { name: "WON", members: ["Abdullah", "Tiana", "Terrence", "Gaeun"] },
+  { name: "Apple", members: ["Jery", "Eris", "Tanny", "Firia"] },
+  { name: "FigmaFiends", members: ["Bonnie", "Cherry", "Quang", "Carys"] },
+  { name: "3 musketeers", members: ["Amy L", "Ishita", "Anoushka"] },
+  { name: "Team 5", members: ["Yungi", "Journey"] },
+  { name: "Sigma Figma", members: ["Mai", "Jenny", "Nina", "Eric"] },
+
+  // Block 2
+  { name: "Designasaurs", members: ["Chelsea", "Nathan"] },
+  { name: "Matcha", members: ["Aubrey", "Ayden", "Iris", "David"] },
+  { name: "Hayden Chan", members: ["Aimee", "Chloe", "Kassi", "Melina"] },
+  { name: "Solemates", members: ["Emily", "Diego", "Justin", "Indy"] },
   {
-    name: "Rubber Duckies",
-    members: ["Jasmine", "Cherry", "Madison", "Katrina"]
+    name: "Sleep Deprived",
+    members: ["Dora", "Isabel", "Sunny", "Srilakshmi"]
   },
-  { name: "team team", members: ["Cristian", "Edric", "Jessica", "Olivia"] },
-  { name: "Team 6", members: ["Richard", "Oleksandr", "Bianca", "Jerry"] },
-  { name: "Codeinators", members: ["Theo", "Grace", "Leland", "Rosemary"] },
-  { name: "Team 8", members: ["Audrey", "Owen", "Sophia", "Boone"] },
-  { name: "Runtime Terrors", members: ["Hao", "Tanny", "Justin", "Winnie"] },
-  { name: "J*BS", members: ["Bhoomika", "Samantha", "Joseph", "Jayden"] },
-  { name: "Tsunami", members: ["Arya", "Ella", "Nidhi", "Mark"] },
-  { name: "Nava", members: ["Verve", "Alexis", "Naythunaing", "Aashir"] },
-  {
-    name: "HelloWorlders",
-    members: ["Beck", "Ellen", "Grace", "Hoonji", "eilh"]
-  },
-  {
-    name: "Git Happens",
-    members: ["Theo", "Rahul", "Priyansh", "Jashan", "px8t"]
-  },
-  { name: "Team 15", members: ["Anis", "Gavin", "Janice", "e2vf"] },
-  { name: "Matcha", members: ["Isabel", "Dora", "Gaida", "Ivenka", "42d7"] },
-  { name: "nullptr", members: ["David", "nina", "avery", "brady", "34gt"] },
-  { name: "MEAF", members: ["Feifei", "Manya", "Arielle", "Emilia", "rwli"] },
-  { name: "5inspirit", members: ["ella", "kaleena", "nicole", "Ashley"] },
-  { name: "Team 20", members: ["Simon", "Luke", "Neil", "Alexa"] },
-  { name: "Team 21", members: ["evan", "michele", "spencer", "johnathon"] },
-  { name: "Team 22", members: ["ryan", "matthew", "daniel", "pete"] },
-  { name: "JASC", members: ["Jenise", "Andrea", "Skyler", "Carson"] }
+  { name: "AWAKE", members: ["Avery", "Daisy", "Heral", "Elaine"] },
+
+  // Block 3
+  { name: "Trust the RNR", members: ["Ananyaa", "Lucky", "Aryaman"] },
+  { name: "Bunny", members: ["Rachel", "Jayden", "Daiel", "Lyon"] },
+  { name: "Teletubies", members: ["Bolu", "Dea", "Grace", "Audrey"] },
+  { name: "PizzaPixel", members: ["Catarina", "Anthony", "Oliva", "Vicky"] },
+  { name: "Chuzz", members: ["Jay", "Sherry", "Adelio", "Lily"] },
+  { name: "Daydream", members: ["Mathew", "Byung", "Harry", "Brady"] },
+
+  // Block 4
+  { name: "Iris", members: ["Iris Cheung"] },
+  { name: "Kiwi", members: ["Yolanda", "Gianna", "Anne", "Jenise"] },
+  { name: "Tardy", members: ["Justin", "Oper", "Nicky"] }
 ];
 
 function slugify(input: string) {
@@ -95,7 +95,6 @@ function Page() {
   const [dryRun, setDryRun] = useState(true);
   const [result, setResult] = useState<string | null>(null);
 
-  // Load current teams (ids + teamCode) to avoid collisions
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -123,7 +122,11 @@ function Page() {
     const out: PlanRow[] = [];
 
     for (const t of RAW_TEAMS) {
-      let base = slugify(t.name);
+      const members = (t.members || [])
+        .map((m) => (m || "").trim())
+        .filter(Boolean);
+
+      const base = slugify(t.name);
       let candidate = base;
       let n = 2;
       while (usedIds.has(candidate)) {
@@ -140,7 +143,7 @@ function Page() {
       out.push({
         teamId: candidate,
         name: t.name,
-        members: t.members,
+        members,
         teamCode: code,
         existsId: existingIds.has(candidate),
         existsCode: existingCodes.has(code)
