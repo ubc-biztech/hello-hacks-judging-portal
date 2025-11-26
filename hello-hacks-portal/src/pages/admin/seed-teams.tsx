@@ -13,39 +13,140 @@ import {
   writeBatch
 } from "firebase/firestore";
 
-/** >>>>>>> YOUR TEAM DATA (updated) <<<<<<< */
 const RAW_TEAMS: { name: string; members: string[] }[] = [
-  // Block 1
-  { name: "WON", members: ["Abdullah", "Tiana", "Terrence", "Gaeun"] },
-  { name: "Apple", members: ["Jery", "Eris", "Tanny", "Firia"] },
-  { name: "FigmaFiends", members: ["Bonnie", "Cherry", "Quang", "Carys"] },
-  { name: "3 musketeers", members: ["Amy L", "Ishita", "Anoushka"] },
-  { name: "Team 5", members: ["Yungi", "Journey"] },
-  { name: "Sigma Figma", members: ["Mai", "Jenny", "Nina", "Eric"] },
-
-  // Block 2
-  { name: "Designasaurs", members: ["Chelsea", "Nathan"] },
-  { name: "Matcha", members: ["Aubrey", "Ayden", "Iris", "David"] },
-  { name: "Hayden Chan", members: ["Aimee", "Chloe", "Kassi", "Melina"] },
-  { name: "Solemates", members: ["Emily", "Diego", "Justin", "Indy"] },
   {
-    name: "Sleep Deprived",
-    members: ["Dora", "Isabel", "Sunny", "Srilakshmi"]
+    name: "Team Cook",
+    members: ["Prajna Nayak", "Mira Sehgal", "Rythem Shah", "Dibbo Roy"]
   },
-  { name: "AWAKE", members: ["Avery", "Daisy", "Heral", "Elaine"] },
-
-  // Block 3
-  { name: "Trust the RNR", members: ["Ananyaa", "Lucky", "Aryaman"] },
-  { name: "Bunny", members: ["Rachel", "Jayden", "Daiel", "Lyon"] },
-  { name: "Teletubies", members: ["Bolu", "Dea", "Grace", "Audrey"] },
-  { name: "PizzaPixel", members: ["Catarina", "Anthony", "Oliva", "Vicky"] },
-  { name: "Chuzz", members: ["Jay", "Sherry", "Adelio", "Lily"] },
-  { name: "Daydream", members: ["Mathew", "Byung", "Harry", "Brady"] },
-
-  // Block 4
-  { name: "Iris", members: ["Iris Cheung"] },
-  { name: "Kiwi", members: ["Yolanda", "Gianna", "Anne", "Jenise"] },
-  { name: "Tardy", members: ["Justin", "Oper", "Nicky"] }
+  {
+    name: "FA2",
+    members: ["Jeff Huang", "Fleming Yip", "Raymond Li", "Leo Wu"]
+  },
+  {
+    name: "JayDeeCee",
+    members: ["Julianna Huang", "David Liu", "Caden Zhang"]
+  },
+  {
+    name: "B2W",
+    members: ["Pete", "Ege Taslicay", "Shaurya Vardhan", "Andy Guo"]
+  },
+  {
+    name: "intrlink",
+    members: [
+      "James Wong",
+      "Keanan Wongso",
+      "Klemens Venturio Djaja",
+      "Efe Bektas"
+    ]
+  },
+  {
+    name: "Goblin Gang",
+    members: ["Tin Yu Adam Tsang", "Rafee Ahsan", "Adrian Fung", "Roy Zheng"]
+  },
+  {
+    name: "Undecided1",
+    members: ["Nick Del Aguila", "Anush Mutyala", "Ellie Taghavi"]
+  },
+  {
+    name: "Goobers",
+    members: ["Chris Lee", "Daniel Zhang", "Kevin Gu", "Elishia Yeung"]
+  },
+  { name: "OrcaLake AI", members: ["Sai Pusuluri", "Rishabh Ghanty"] },
+  {
+    name: "a19z",
+    members: ["Jenise Yang", "Dawn Tang", "Joanna Xu", "Douglas Chen"]
+  },
+  { name: "Undecided2", members: ["Thomas Ah Sing"] },
+  {
+    name: "Supernova",
+    members: [
+      "Daniel Morgan",
+      "Danny Nosrati",
+      "Pavni Labade",
+      "Jiratip Pairotkijja"
+    ]
+  },
+  { name: "Undecided3", members: ["Caleb Lo", "Tushar Jindal", "Roxy Chen"] },
+  {
+    name: "Mango",
+    members: ["Caleab Onyango", "Iris Liu", "Daniel Agapov", "Kellie Ho"]
+  },
+  {
+    name: "Zero Latency",
+    members: ["Nyamat Paul", "Inderveer Sidhu", "Adesh Malhans", "Derek Zhao"]
+  },
+  {
+    name: "YC 2026",
+    members: ["Edric Mei", "Noah Hynds", "Matthew Haryanto", "Fabian Siswanto"]
+  },
+  {
+    name: "Jays",
+    members: ["Reza Sabid", "Marshall Xie", "Stephen Qiao", "dua khan"]
+  },
+  {
+    name: "a67z",
+    members: [
+      "Saketh Poori",
+      "Achilles Michoulas",
+      "Matthew Gultom",
+      "Justin Pilson"
+    ]
+  },
+  {
+    name: "Pantera",
+    members: [
+      "Kamila Maral",
+      "Masih Beigi Rizi",
+      "Ali Bazshoushtari",
+      "Kassiyet Adilbay"
+    ]
+  },
+  {
+    name: "Figma Fiends",
+    members: ["Bonnie Lu", "Quang Mai", "Carys Fong", "Cherry Wang"]
+  },
+  {
+    name: "1000 Hands",
+    members: ["Ayden Lum", "Sage Enright", "Richard Cao", "Noah Marusenko"]
+  },
+  {
+    name: "watermelon gang",
+    members: ["Aaron Huang", "Ethan Chee", "David Kim", "Josh Park"]
+  },
+  {
+    name: "Connections",
+    members: ["Zack Ellington", "Jugaad Singh", "Aaron Rhim", "Arturo Spencer"]
+  },
+  {
+    name: "2Y2B",
+    members: [
+      "Hanson Yue",
+      "Aryan Bhatt",
+      "Jason Yee",
+      "Prakul Sanjith Selvakumar"
+    ]
+  },
+  {
+    name: "Mizar",
+    members: ["Daniel Chen", "Winsor Zhu", "Yikai Fang", "James Paquin"]
+  },
+  {
+    name: "Facebook",
+    members: ["Makoto HW", "Christopher Rodas Castillo", "Gabriella Leyne"]
+  },
+  { name: "MHAP", members: ["Bella Wang", "Jenny Shi", "Juanse Bercerra"] },
+  { name: "KNLR", members: ["Kentaro", "Nimesh", "Leia Chen", "Rosie Xuan"] },
+  {
+    name: "team-mango",
+    members: ["Connor Morrison", "Carson Jan", "Richard Mou", "Tianyu Xia"]
+  },
+  { name: "tpot", members: ["Matthew Chow", "Ella Schlaghecke"] },
+  {
+    name: "Growth Hormone",
+    members: ["Warren Dmello", "Medhansh Choubey", "Shaurya Thareja"]
+  },
+  { name: "Team Clueless", members: ["Chau Thai", "Anonymous Dingo Dog"] },
+  { name: "TraceForIt", members: ["Adi Garg", "Nicholas Yovanovich"] }
 ];
 
 function slugify(input: string) {
@@ -59,7 +160,6 @@ function slugify(input: string) {
   );
 }
 
-// A-Z + 0-9 (no ambiguity filter to keep it simple)
 function code4() {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let s = "";
@@ -115,7 +215,6 @@ function Page() {
     })();
   }, []);
 
-  // Build a plan that ensures unique ids and codes against existing + within this run
   const plan: PlanRow[] = useMemo(() => {
     const usedIds = new Set(existingIds);
     const usedCodes = new Set(existingCodes);
