@@ -67,11 +67,13 @@ function Page() {
       ts.forEach((d) => (tmap[d.id] = { id: d.id, ...(d.data() as any) }));
       setTeams(tmap);
 
+      // judges
       const js = await getDocs(collection(db, "events", EVENT_ID, "judges"));
       const jlist: Judge[] = [];
       js.forEach((d) => jlist.push({ id: d.id, ...(d.data() as any) }));
       setJudges(jlist);
 
+      // prelim reviews aggregate
       const rs = await getDocs(collection(db, "events", EVENT_ID, "reviews"));
       const agg: Record<string, { sumW: number; sum: number; count: number }> =
         {};
@@ -144,8 +146,8 @@ function Page() {
   }
 
   async function saveConfig() {
-    if (selectedFinalsJudges.size !== 4) {
-      alert("Please select exactly 4 finals judges.");
+    if (selectedFinalsJudges.size === 0) {
+      alert("Please select at least one finals judge.");
       return;
     }
     if (selectedFinalsTeams.size === 0) {
@@ -168,8 +170,8 @@ function Page() {
   }
 
   async function startFinalsPhase() {
-    if (selectedFinalsJudges.size !== 4) {
-      alert("Select exactly 4 finals judges before starting finals.");
+    if (selectedFinalsJudges.size === 0) {
+      alert("Select at least one finals judge before starting finals.");
       return;
     }
     if (selectedFinalsTeams.size === 0) {
@@ -243,9 +245,9 @@ function Page() {
       {/* Finals judges */}
       <section className="mb-8 rounded-2xl border border-gray-200 p-4 dark:border-white/10">
         <div className="mb-3 flex items-center justify-between">
-          <div className="font-semibold">Select Finals Judges (exactly 4)</div>
+          <div className="font-semibold">Select Finals Judges</div>
           <div className="text-xs text-gray-500 dark:text-gray-400">
-            Selected: {selectedFinalsJudges.size} / 4
+            Selected: {selectedFinalsJudges.size}
           </div>
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
@@ -269,7 +271,8 @@ function Page() {
           ))}
         </div>
         <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-          Only these judges can access the finals dashboard.
+          Only these judges can access the finals judging view. You can choose
+          any number of finals judges.
         </p>
       </section>
 
@@ -290,7 +293,7 @@ function Page() {
             />
             <button
               onClick={takeTopN}
-              className="rounded-md border border-gray-200 px-2 py-1 text-xs hover:bg-gray-50 dark:border-white/10 dark:hover:bg-white/5"
+              className="rounded-md border border-gray-200 px-2 py-1 text-xs hover:bg-gray-50 dark:border-white/10 dark:hover:bg:white/5"
             >
               Use computed Top N
             </button>
