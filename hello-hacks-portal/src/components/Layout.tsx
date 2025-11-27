@@ -10,7 +10,7 @@ import { useClientSession, clearSession } from "@/lib/session";
 type NavItem = { name: string; href: string };
 
 const nav: NavItem[] = [
-  { name: "Judge", href: "/judge/finals" },
+  { name: "Final Judging", href: "/judge/finals" },
   { name: "Results", href: "/results" },
   { name: "Admin", href: "/admin" },
   { name: "Submit", href: "/submit" }
