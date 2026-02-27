@@ -9,8 +9,7 @@ import { db, EVENT_ID } from "@/lib/firebase";
 import {
   collection,
   doc,
-  getDoc,
-  getDocs,
+  onSnapshot,
   query,
   setDoc,
   where
@@ -30,7 +29,7 @@ type Team = {
   imageUrls?: string[];
 };
 
-type Criterion = { id: string; label: string; weight: number };
+type Criterion = { id: string; label: string; weight: number; maxScore?: number };
 
 export default function JudgeTeamPage() {
   return (
@@ -64,54 +63,66 @@ function Page() {
 
   useEffect(() => {
     if (!ready || !teamId) return;
-    (async () => {
-      const sSnap = await getDoc(doc(db, "events", EVENT_ID));
-      setSettings(sSnap.exists() ? sSnap.data() : {});
+    const unsubs: Array<() => void> = [];
 
-      const tRef = doc(db, "events", EVENT_ID, "teams", teamId);
-      const tSnap = await getDoc(tRef);
-      if (tSnap.exists()) {
-        setTeam({ id: tSnap.id, ...(tSnap.data() as any) });
-      } else {
-        alert("Team not found.");
-      }
+    unsubs.push(
+      onSnapshot(doc(db, "events", EVENT_ID), (sSnap) => {
+        setSettings(sSnap.exists() ? sSnap.data() : {});
+      })
+    );
 
-      const rRef = doc(db, "events", EVENT_ID, "rubric", "default");
-      const rSnap = await getDoc(rRef);
-      if (rSnap.exists()) {
-        const d = rSnap.data() as any;
-        setRubric({
-          criteria: (d.criteria || []) as Criterion[],
-          scaleMax: Number(d.scaleMax || 5)
-        });
-      } else {
-        // fallback: simple 4-criterion default if rubric is missing
-        setRubric({
-          criteria: [
-            { id: "innovation", label: "Innovation", weight: 1 },
-            { id: "technical", label: "Technical Complexity", weight: 1 },
-            { id: "usability", label: "Usability / UX", weight: 1 },
-            { id: "impact", label: "Impact / Value", weight: 1 }
-          ],
-          scaleMax: 5
-        });
-      }
-
-      // Existing review by this judge for this team
-      if (judgeId) {
-        const q1 = query(
-          collection(db, "events", EVENT_ID, "reviews"),
-          where("teamId", "==", teamId),
-          where("judgeId", "==", judgeId)
-        );
-        const rs = await getDocs(q1);
-        if (!rs.empty) {
-          setExisting({ id: rs.docs[0].id, ...(rs.docs[0].data() as any) });
+    unsubs.push(
+      onSnapshot(doc(db, "events", EVENT_ID, "teams", teamId), (tSnap) => {
+        if (tSnap.exists()) {
+          setTeam({ id: tSnap.id, ...(tSnap.data() as any) });
         } else {
-          setExisting(null);
+          setTeam(null);
         }
-      }
-    })();
+      })
+    );
+
+    unsubs.push(
+      onSnapshot(doc(db, "events", EVENT_ID, "rubric", "default"), (rSnap) => {
+        if (rSnap.exists()) {
+          const d = rSnap.data() as any;
+          setRubric({
+            criteria: (d.criteria || []) as Criterion[],
+            scaleMax: Number(d.scaleMax || 5)
+          });
+        } else {
+          setRubric({
+            criteria: [
+              { id: "innovation", label: "Innovation", weight: 1 },
+              { id: "technical", label: "Technical Complexity", weight: 1 },
+              { id: "usability", label: "Usability / UX", weight: 1 },
+              { id: "impact", label: "Impact / Value", weight: 1 }
+            ],
+            scaleMax: 5
+          });
+        }
+      })
+    );
+
+    if (judgeId) {
+      const q1 = query(
+        collection(db, "events", EVENT_ID, "reviews"),
+        where("teamId", "==", teamId),
+        where("judgeId", "==", judgeId)
+      );
+      unsubs.push(
+        onSnapshot(q1, (rs) => {
+          if (!rs.empty) {
+            setExisting({ id: rs.docs[0].id, ...(rs.docs[0].data() as any) });
+          } else {
+            setExisting(null);
+          }
+        })
+      );
+    }
+
+    return () => {
+      unsubs.forEach((u) => u());
+    };
   }, [ready, teamId, judgeId]);
 
   const weights = useMemo<Record<string, number>>(() => {

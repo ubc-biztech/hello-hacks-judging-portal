@@ -54,19 +54,18 @@ function cleanId(s: string) {
 }
 
 const judgesList = [
-  "Chang Han",
-  "Shantanu Mehta",
-  "Aaron Stuart",
-  "Gabe Ravacci",
-  "Angus Fudge",
-  "Mai Trinh",
-  "Rahul Rao",
-  "Kevin Dhir",
-  "Abhay Ghatpande",
-  "Melaniia Volkodav",
-  "Tony Hui",
-  "Alexander Dungate",
-  "Tyler Nee"
+  "Oonita Keekarjai",
+  "Emmatien Tran",
+  "Shirin Karimifar",
+  "Zineb Takafi",
+  "Bhuvan Shah",
+  "Yeshu Aggarwal",
+  "Cesar Ayala Alanis",
+  "Amanbir Sandhu",
+  "Shubhleen Kaur Dhaka",
+  "Jason Peter Andrews",
+  "Aashish Bhardwaj",
+  "Sruthi Kavalipurapu"
 ];
 
 const judges = judgesList.map((name) => {

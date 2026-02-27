@@ -4,55 +4,99 @@ import { useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import RoleGate from "@/components/RoleGate";
 import TeamCard from "@/components/TeamCard";
-import { listTeamsByIds } from "@/lib/firestore";
+import { Team } from "@/lib/types";
 import {
   collection,
-  getDoc,
-  getDocs,
+  doc,
+  onSnapshot,
   query,
-  where,
-  doc
+  where
 } from "firebase/firestore";
 import { db, EVENT_ID } from "@/lib/firebase";
-import { getSession } from "@/lib/session";
+import { useClientSession } from "@/lib/session";
+
+type EventSettings = {
+  anonymizeTeams?: boolean;
+};
+
+type JudgeDoc = {
+  assignedTeamIds?: string[];
+};
 
 function Page() {
-  const [judge, setJudge] = useState<any>(null);
-  const [teams, setTeams] = useState<any[]>([]);
+  const { ready, session } = useClientSession();
+  const judgeId = ready && session?.role === "judge" ? session.judgeId : null;
+  const judgeName =
+    ready && session?.role === "judge" ? session.name || "Judge" : "Judge";
+
+  const [teamMap, setTeamMap] = useState<Record<string, Team>>({});
+  const [assignedTeamIds, setAssignedTeamIds] = useState<string[]>([]);
   const [doneTeamIds, setDone] = useState<Set<string>>(new Set());
-  const [settings, setSettings] = useState<any>(null);
+  const [settings, setSettings] = useState<EventSettings | null>(null);
 
   useEffect(() => {
-    (async () => {
-      const s = await getDoc(doc(db, "events", EVENT_ID));
-      setSettings(s.exists() ? s.data() : {});
-    })();
+    const unsub = onSnapshot(doc(db, "events", EVENT_ID), (snap) => {
+      setSettings(snap.exists() ? snap.data() : {});
+    });
+    return () => unsub();
   }, []);
 
   useEffect(() => {
-    const s = getSession();
-    if (s?.role === "judge")
-      setJudge({ id: s.judgeId, name: s.name, code: s.judgeCode });
+    if (!judgeId) return;
+    const judgeRef = doc(db, "events", EVENT_ID, "judges", judgeId);
+    const unsub = onSnapshot(judgeRef, (snap) => {
+      const assigned = (snap.data() as JudgeDoc)?.assignedTeamIds || [];
+      setAssignedTeamIds(Array.isArray(assigned) ? assigned : []);
+    });
+    return () => unsub();
+  }, [judgeId]);
+
+  useEffect(() => {
+    const teamsRef = collection(db, "events", EVENT_ID, "teams");
+    const unsub = onSnapshot(teamsRef, (snap) => {
+      const next: Record<string, Team> = {};
+      snap.forEach((d) => {
+        const data = d.data() as Partial<Team>;
+        next[d.id] = {
+          id: d.id,
+          name: data.name || d.id,
+          members: data.members || [],
+          techStack: data.techStack || [],
+          github: data.github,
+          devpost: data.devpost,
+          description: data.description,
+          imageUrls: data.imageUrls || [],
+          teamCode: data.teamCode,
+          createdAt: data.createdAt
+        };
+      });
+      setTeamMap(next);
+    });
+    return () => unsub();
   }, []);
 
   useEffect(() => {
-    async function load() {
-      if (!judge) return;
-      const jDoc = await getDoc(
-        doc(db, "events", EVENT_ID, "judges", judge.id)
+    if (!judgeId) return;
+    const qReviews = query(
+      collection(db, "events", EVENT_ID, "reviews"),
+      where("judgeId", "==", judgeId)
+    );
+    const unsub = onSnapshot(qReviews, (snap) => {
+      setDone(
+        new Set(
+          snap.docs
+            .map((d) => (d.data() as { teamId?: string }).teamId)
+            .filter((id): id is string => Boolean(id))
+        )
       );
-      const assigned = (jDoc.data() as any)?.assignedTeamIds || [];
-      const t = await listTeamsByIds(assigned);
-      setTeams(t);
-      const qReviews = query(
-        collection(db, "events", EVENT_ID, "reviews"),
-        where("judgeId", "==", judge.id)
-      );
-      const rs = await getDocs(qReviews);
-      setDone(new Set(rs.docs.map((d) => d.data().teamId)));
-    }
-    load();
-  }, [judge]);
+    });
+    return () => unsub();
+  }, [judgeId]);
+
+  const teams = useMemo(
+    () => assignedTeamIds.map((id) => teamMap[id]).filter(Boolean),
+    [assignedTeamIds, teamMap]
+  );
 
   const progress = useMemo(() => {
     const d = doneTeamIds.size;
@@ -60,34 +104,83 @@ function Page() {
     return `${d}/${total} completed`;
   }, [doneTeamIds, teams]);
 
+  const doneCount = useMemo(
+    () => teams.filter((t) => doneTeamIds.has(t.id)).length,
+    [teams, doneTeamIds]
+  );
+  const remainingCount = Math.max(0, teams.length - doneCount);
+
   return (
     <Layout>
-      <div className="p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Welcome, {judge?.name || "—"}</h1>
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            {progress}
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {teams.map((t) => (
-            <TeamCard
-              key={t.id}
-              team={{
-                ...t,
-                name: settings?.anonymizeTeams
-                  ? `Team ${t.id.slice(0, 4).toUpperCase()}`
-                  : t.name
-              }}
-              judged={doneTeamIds.has(t.id)}
-            />
-          ))}
-          {teams.length === 0 && (
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              No assignments yet.
+      <div className="mx-auto max-w-6xl space-y-6 p-2 sm:p-4">
+        <section className="rounded-3xl border border-white/10 bg-black/30 p-5 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
+                Judge Workspace
+              </p>
+              <h1 className="mt-2 text-3xl font-semibold text-slate-100">
+                Welcome, {judgeName}
+              </h1>
+              <p className="mt-3 text-sm text-slate-400">Complete assigned reviews.</p>
             </div>
-          )}
-        </div>
+            <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-200">
+              {progress}
+            </span>
+          </div>
+
+          <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-[#0c1324]/70 p-4">
+              <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
+                Assigned
+              </p>
+              <p className="mt-2 text-2xl font-semibold text-slate-100">
+                {teams.length}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-emerald-300/20 bg-emerald-400/5 p-4">
+              <p className="text-xs uppercase tracking-[0.14em] text-emerald-300/70">
+                Completed
+              </p>
+              <p className="mt-2 text-2xl font-semibold text-emerald-200">
+                {doneCount}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-amber-300/20 bg-amber-400/5 p-4">
+              <p className="text-xs uppercase tracking-[0.14em] text-amber-300/70">
+                Remaining
+              </p>
+              <p className="mt-2 text-2xl font-semibold text-amber-200">
+                {remainingCount}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-400">
+            Assigned Teams
+          </h2>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {teams.map((t) => (
+              <TeamCard
+                key={t.id}
+                team={{
+                  ...t,
+                  name: settings?.anonymizeTeams
+                    ? `Team ${t.id.slice(0, 4).toUpperCase()}`
+                    : t.name
+                }}
+                judged={doneTeamIds.has(t.id)}
+              />
+            ))}
+            {teams.length === 0 && (
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-slate-400">
+                No assignments yet.
+              </div>
+            )}
+          </div>
+        </section>
       </div>
     </Layout>
   );

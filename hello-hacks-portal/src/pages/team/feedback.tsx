@@ -10,13 +10,12 @@ import { db, EVENT_ID } from "@/lib/firebase";
 import {
   collection,
   doc,
-  getDoc,
-  getDocs,
+  onSnapshot,
   query,
   where
 } from "firebase/firestore";
 
-type Criterion = { id: string; label: string; weight: number };
+type Criterion = { id: string; label: string; weight: number; maxScore?: number };
 type Rubric = { scaleMax: number; criteria: Criterion[] };
 
 type Review = {
@@ -54,6 +53,7 @@ function Page() {
   const [team, setTeam] = useState<Team | null>(null);
   const [rubric, setRubric] = useState<Rubric | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [canViewFeedback, setCanViewFeedback] = useState(true);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"prelim" | "finals">("prelim");
 
@@ -65,42 +65,100 @@ function Page() {
       setLoading(false);
       return;
     }
-    (async () => {
-      setLoading(true);
+    setLoading(true);
 
-      const tSnap = await getDoc(doc(db, "events", EVENT_ID, "teams", teamId));
-      if (tSnap.exists()) {
-        setTeam({ id: tSnap.id, ...(tSnap.data() as any) });
+    const readyFlags = {
+      settings: false,
+      team: false,
+      rubric: false,
+      reviews: false
+    };
+    const markReady = (key: keyof typeof readyFlags) => {
+      readyFlags[key] = true;
+      if (Object.values(readyFlags).every(Boolean)) {
+        setLoading(false);
       }
+    };
 
-      const rSnap = await getDoc(
-        doc(db, "events", EVENT_ID, "rubric", "default")
-      );
-      if (rSnap.exists()) {
-        const data = rSnap.data() as any;
-        setRubric({
-          scaleMax: Number(data.scaleMax || 5),
-          criteria: (data.criteria || []) as Criterion[]
+    const unsubSettings = onSnapshot(
+      doc(db, "events", EVENT_ID),
+      (sSnap) => {
+        const settings = sSnap.exists() ? (sSnap.data() as any) : {};
+        if (settings.showTeamFeedback === false) {
+          setCanViewFeedback(false);
+          setTeam(null);
+          setRubric(null);
+          setReviews([]);
+        } else {
+          setCanViewFeedback(true);
+        }
+        markReady("settings");
+      },
+      () => markReady("settings")
+    );
+
+    const unsubTeam = onSnapshot(
+      doc(db, "events", EVENT_ID, "teams", teamId),
+      (tSnap) => {
+        if (tSnap.exists()) {
+          setTeam({ id: tSnap.id, ...(tSnap.data() as any) });
+        } else {
+          setTeam(null);
+        }
+        markReady("team");
+      },
+      () => markReady("team")
+    );
+
+    const unsubRubric = onSnapshot(
+      doc(db, "events", EVENT_ID, "rubric", "default"),
+      (rSnap) => {
+        if (rSnap.exists()) {
+          const data = rSnap.data() as any;
+          const scaleMax = Number(data.scaleMax || 5);
+          setRubric({
+            scaleMax,
+            criteria: (data.criteria || []).map((c: any) => ({
+              ...c,
+              maxScore: Math.max(
+                1,
+                Math.round(Number(c.maxScore ?? scaleMax) || scaleMax)
+              )
+            })) as Criterion[]
+          });
+        } else {
+          setRubric({ scaleMax: 5, criteria: [] });
+        }
+        markReady("rubric");
+      },
+      () => markReady("rubric")
+    );
+
+    const rq = query(
+      collection(db, "events", EVENT_ID, "reviews"),
+      where("teamId", "==", teamId)
+    );
+    const unsubReviews = onSnapshot(
+      rq,
+      (rs) => {
+        const list: Review[] = [];
+        rs.forEach((d) => {
+          const v = { id: d.id, ...(d.data() as any) } as Review;
+          const round = (v.round || "prelim") as "prelim" | "finals";
+          list.push({ ...v, round });
         });
-      } else {
-        setRubric({ scaleMax: 5, criteria: [] });
-      }
+        setReviews(list);
+        markReady("reviews");
+      },
+      () => markReady("reviews")
+    );
 
-      const rq = query(
-        collection(db, "events", EVENT_ID, "reviews"),
-        where("teamId", "==", teamId)
-      );
-      const rs = await getDocs(rq);
-      const list: Review[] = [];
-      rs.forEach((d) => {
-        const v = { id: d.id, ...(d.data() as any) } as Review;
-        const round = (v.round || "prelim") as "prelim" | "finals";
-        list.push({ ...v, round });
-      });
-      setReviews(list);
-
-      setLoading(false);
-    })();
+    return () => {
+      unsubSettings();
+      unsubTeam();
+      unsubRubric();
+      unsubReviews();
+    };
   }, [ready, teamId]);
 
   const prelimReviews = useMemo(
@@ -113,6 +171,8 @@ function Page() {
   );
 
   const crits = rubric?.criteria || [];
+  const criterionMax = (c: Criterion) =>
+    Math.max(1, Math.round(Number(c.maxScore ?? rubric?.scaleMax ?? 5) || 5));
   const current = tab === "prelim" ? prelimReviews : finalsReviews;
 
   const sorted = useMemo(
@@ -186,6 +246,16 @@ function Page() {
       team?.name || teamId
     }-feedback-${tab}-${dateSlug()}.csv`;
     downloadBlob([lines.join("\n")], filename, "text/csv;charset=utf-8");
+  }
+
+  if (!loading && !canViewFeedback) {
+    return (
+      <div className="mx-auto max-w-3xl">
+        <div className="rounded-2xl border border-gray-200 p-4 text-sm text-gray-600 dark:border-white/10 dark:text-gray-300">
+          Feedback is hidden right now.
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -264,9 +334,9 @@ function Page() {
         ) : (
           <>
             <div className="mb-2 text-xs text-gray-500 dark:text-gray-400">
-              Scores are from 0 to {rubric?.scaleMax ?? 5}. Weighted score is
-              the sum of (criterion score × weight). Feedback is shown exactly
-              as judges entered it.
+              Each criterion uses its own score range (0 to max). Weighted score
+              is the average of (criterion score × weight). Feedback is shown
+              exactly as judges entered it.
             </div>
 
             <div className="overflow-x-auto">
@@ -278,7 +348,7 @@ function Page() {
                       <th key={c.id} className="px-3 py-2 text-left">
                         {c.label}
                         <div className="text-[10px] text-gray-500">
-                          wt {c.weight}
+                          wt {c.weight} | max {criterionMax(c)}
                         </div>
                       </th>
                     ))}

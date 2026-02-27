@@ -9,8 +9,7 @@ import {
   doc,
   getDoc,
   getDocs,
-  query,
-  updateDoc
+  setDoc
 } from "firebase/firestore";
 
 type Team = { id: string; name: string; members?: string[] };
@@ -28,6 +27,14 @@ type Review = {
   round?: "prelim" | "finals";
 };
 
+type EventSettings = {
+  phase?: string;
+  finalsTopN?: number;
+  finalsTeamIds?: string[];
+  finalsJudgeIds?: string[];
+  [key: string]: unknown;
+};
+
 export default function FinalsAdminPage() {
   return (
     <RoleGate allow={["admin"]}>
@@ -39,7 +46,7 @@ export default function FinalsAdminPage() {
 }
 
 function Page() {
-  const [settings, setSettings] = useState<any>(null);
+  const [settings, setSettings] = useState<EventSettings | null>(null);
   const [teams, setTeams] = useState<Record<string, Team>>({});
   const [judges, setJudges] = useState<Judge[]>([]);
   const [prelimAgg, setPrelimAgg] = useState<
@@ -53,24 +60,41 @@ function Page() {
     new Set()
   );
   const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     (async () => {
       const s = await getDoc(doc(db, "events", EVENT_ID));
-      const sData = s.exists() ? s.data() : {};
+      const sData = s.exists() ? (s.data() as EventSettings) : {};
       setSettings(sData);
       setFinalsTopN(Number(sData.finalsTopN ?? 5));
 
       // teams
       const ts = await getDocs(collection(db, "events", EVENT_ID, "teams"));
       const tmap: Record<string, Team> = {};
-      ts.forEach((d) => (tmap[d.id] = { id: d.id, ...(d.data() as any) }));
+      ts.forEach((d) => {
+        const data = d.data() as Partial<Team>;
+        tmap[d.id] = {
+          id: d.id,
+          name: data.name || d.id,
+          members: data.members
+        };
+      });
       setTeams(tmap);
 
       // judges
       const js = await getDocs(collection(db, "events", EVENT_ID, "judges"));
       const jlist: Judge[] = [];
-      js.forEach((d) => jlist.push({ id: d.id, ...(d.data() as any) }));
+      js.forEach((d) => {
+        const data = d.data() as Partial<Judge>;
+        jlist.push({
+          id: d.id,
+          name: data.name || d.id,
+          isAdmin: data.isAdmin,
+          assignedTeamIds: data.assignedTeamIds
+        });
+      });
       setJudges(jlist);
 
       // prelim reviews aggregate
@@ -119,6 +143,9 @@ function Page() {
     return arr;
   }, [teams, prelimAgg]);
 
+  const phase = settings?.phase || "prelim";
+  const finalsLive = phase === "finals";
+
   function takeTopN() {
     const s = new Set<string>();
     for (let i = 0; i < Math.min(finalsTopN, ranked.length); i++) {
@@ -146,61 +173,89 @@ function Page() {
   }
 
   async function saveConfig() {
+    setError("");
+    setNotice("");
     if (selectedFinalsJudges.size === 0) {
-      alert("Please select at least one finals judge.");
+      setError("Select at least one finals judge.");
       return;
     }
     if (selectedFinalsTeams.size === 0) {
-      alert("Please select at least 1 finals team.");
+      setError("Select at least one finals team.");
       return;
     }
     setBusy(true);
     try {
-      await updateDoc(doc(db, "events", EVENT_ID), {
+      await setDoc(
+        doc(db, "events", EVENT_ID),
+        {
+          finalsTopN,
+          finalsTeamIds: Array.from(selectedFinalsTeams),
+          finalsJudgeIds: Array.from(selectedFinalsJudges)
+        },
+        { merge: true }
+      );
+      setSettings((prev) => ({
+        ...(prev || {}),
         finalsTopN,
         finalsTeamIds: Array.from(selectedFinalsTeams),
         finalsJudgeIds: Array.from(selectedFinalsJudges)
-      });
-      alert("Finals configuration saved.");
-    } catch (e: any) {
-      alert(e.message || "Error saving finals config");
+      }));
+      setNotice("Finals setup saved.");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error saving finals setup.");
     } finally {
       setBusy(false);
     }
   }
 
   async function startFinalsPhase() {
+    setError("");
+    setNotice("");
     if (selectedFinalsJudges.size === 0) {
-      alert("Select at least one finals judge before starting finals.");
+      setError("Select at least one finals judge.");
       return;
     }
     if (selectedFinalsTeams.size === 0) {
-      alert("Select finals teams before starting finals.");
+      setError("Select finals teams.");
       return;
     }
     setBusy(true);
     try {
-      await updateDoc(doc(db, "events", EVENT_ID), {
+      await setDoc(
+        doc(db, "events", EVENT_ID),
+        {
+          phase: "finals",
+          finalsTopN,
+          finalsTeamIds: Array.from(selectedFinalsTeams),
+          finalsJudgeIds: Array.from(selectedFinalsJudges)
+        },
+        { merge: true }
+      );
+      setSettings((prev) => ({
+        ...(prev || {}),
         phase: "finals",
         finalsTopN,
         finalsTeamIds: Array.from(selectedFinalsTeams),
         finalsJudgeIds: Array.from(selectedFinalsJudges)
-      });
-      alert("Finals started. Finals judges can now review finals teams.");
-    } catch (e: any) {
-      alert(e.message || "Error starting finals");
+      }));
+      setNotice("Finals started.");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error starting finals.");
     } finally {
       setBusy(false);
     }
   }
 
   async function revertToPrelim() {
+    setError("");
+    setNotice("");
     setBusy(true);
     try {
-      await updateDoc(doc(db, "events", EVENT_ID), { phase: "prelim" });
-      alert("Phase set to prelim.");
-    } catch (e: any) {
-      alert(e.message || "Error");
+      await setDoc(doc(db, "events", EVENT_ID), { phase: "prelim" }, { merge: true });
+      setSettings((prev) => ({ ...(prev || {}), phase: "prelim" }));
+      setNotice("Switched to prelim.");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error switching to prelim.");
     } finally {
       setBusy(false);
     }
@@ -208,36 +263,73 @@ function Page() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Final Round
           </h1>
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Current phase: {settings?.phase || "—"}
-          </p>
         </div>
+      </div>
+
+      <section
+        className={[
+          "mb-6 rounded-2xl border p-4",
+          finalsLive
+            ? "border-emerald-300/30 bg-emerald-500/10"
+            : "border-amber-300/30 bg-amber-500/10"
+        ].join(" ")}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-xs uppercase tracking-wide text-gray-600 dark:text-gray-300">
+              Current phase
+            </div>
+            <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
+              {finalsLive ? "Finals Live" : "Prelim Active"}
+            </div>
+            <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+              {selectedFinalsJudges.size} judges • {selectedFinalsTeams.size} teams
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={startFinalsPhase}
+              disabled={busy || finalsLive}
+              className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {busy ? "Working..." : finalsLive ? "Finals Started" : "Start Finals Now"}
+            </button>
+            <button
+              onClick={revertToPrelim}
+              disabled={busy || !finalsLive}
+              className="rounded-lg border border-rose-300/40 bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:text-rose-300"
+            >
+              {busy ? "Working..." : "Switch Back to Prelim"}
+            </button>
+          </div>
+        </div>
+        {(notice || error) && (
+          <div
+            className={[
+              "mt-3 rounded-lg border px-3 py-2 text-xs",
+              error
+                ? "border-rose-300/40 bg-rose-500/10 text-rose-700 dark:text-rose-300"
+                : "border-emerald-300/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+            ].join(" ")}
+          >
+            {error || notice}
+          </div>
+        )}
+      </section>
+
+      <div className="mb-6 flex items-center justify-end">
         <div className="flex gap-2">
           <button
             onClick={saveConfig}
             disabled={busy}
             className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs hover:bg-gray-50 dark:border-white/10 dark:hover:bg-white/5"
           >
-            Save config
-          </button>
-          <button
-            onClick={startFinalsPhase}
-            disabled={busy}
-            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
-          >
-            Start finals
-          </button>
-          <button
-            onClick={revertToPrelim}
-            disabled={busy}
-            className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs hover:bg-gray-50 dark:border-white/10 dark:hover:bg-white/5"
-          >
-            Back to prelim
+            Save Finals Setup
           </button>
         </div>
       </div>

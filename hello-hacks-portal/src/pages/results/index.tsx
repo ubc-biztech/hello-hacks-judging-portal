@@ -7,16 +7,15 @@ import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import {
   collection,
-  getDoc,
-  getDocs,
   doc,
+  onSnapshot,
   orderBy,
   query
 } from "firebase/firestore";
 import { db, EVENT_ID } from "@/lib/firebase";
 import { useClientSession } from "@/lib/session";
 
-type Criterion = { id: string; label: string; weight: number };
+type Criterion = { id: string; label: string; weight: number; maxScore?: number };
 type Rubric = { scaleMax: number; criteria: Criterion[] };
 
 type Review = {
@@ -46,6 +45,7 @@ export default function Results() {
   const [rows, setRows] = useState<Row[]>([]);
   const [teams, setTeams] = useState<Record<string, Team>>({});
   const [settings, setSettings] = useState<any>(null);
+  const [settingsReady, setSettingsReady] = useState(false);
   const [reviewsByTeam, setReviewsByTeam] = useState<Record<string, Review[]>>(
     {}
   );
@@ -60,45 +60,71 @@ export default function Results() {
   const router = useRouter();
 
   useEffect(() => {
-    if (isTeam) {
-      router.replace("/team/feedback");
-      return;
-    }
-    (async () => {
-      // Settings
-      const s = await getDoc(doc(db, "events", EVENT_ID));
-      setSettings(s.exists() ? s.data() : {});
-      // Rubric
-      const r = await getDoc(doc(db, "events", EVENT_ID, "rubric", "default"));
+    if (!ready) return;
+    const eventRef = doc(db, "events", EVENT_ID);
+    const rubricRef = doc(db, "events", EVENT_ID, "rubric", "default");
+    const teamsRef = collection(db, "events", EVENT_ID, "teams");
+    const reviewsRef = query(
+      collection(db, "events", EVENT_ID, "reviews"),
+      orderBy("teamId")
+    );
+
+    const unsubSettings = onSnapshot(
+      eventRef,
+      (snap) => {
+        const sData = snap.exists() ? snap.data() : {};
+        setSettings(sData);
+        setSettingsReady(true);
+        if (session?.role === "team" && sData.showTeamFeedback !== false) {
+          router.replace("/team/feedback");
+        }
+      },
+      () => setSettingsReady(true)
+    );
+
+    const unsubRubric = onSnapshot(rubricRef, (r) => {
       if (r.exists()) {
         const data = r.data() as any;
+        const scaleMax = Number(data.scaleMax || 5);
         setRubric({
-          scaleMax: Number(data.scaleMax || 5),
-          criteria: (data.criteria || []) as Criterion[]
+          scaleMax,
+          criteria: (data.criteria || []).map((c: any) => ({
+            ...c,
+            maxScore: Math.max(
+              1,
+              Math.round(Number(c.maxScore ?? scaleMax) || scaleMax)
+            )
+          })) as Criterion[]
         });
       } else {
         setRubric({ scaleMax: 5, criteria: [] });
       }
-      // Teams
-      const ts = await getDocs(collection(db, "events", EVENT_ID, "teams"));
+    });
+
+    const unsubTeams = onSnapshot(teamsRef, (ts) => {
       const teamMap: Record<string, Team> = {};
       ts.forEach((d) => (teamMap[d.id] = { id: d.id, ...(d.data() as any) }));
       setTeams(teamMap);
-      // Reviews (all rounds)
-      const rs = await getDocs(
-        query(collection(db, "events", EVENT_ID, "reviews"), orderBy("teamId"))
-      );
+    });
+
+    const unsubReviews = onSnapshot(reviewsRef, (rs) => {
       const byTeam: Record<string, Review[]> = {};
       rs.forEach((d) => {
         const v = { id: d.id, ...(d.data() as any) } as Review;
         const round = (v.round || "prelim") as "prelim" | "finals";
-        // Keep both rounds; we’ll filter by tab later
         if (!byTeam[v.teamId]) byTeam[v.teamId] = [];
         byTeam[v.teamId].push({ ...v, round });
       });
       setReviewsByTeam(byTeam);
-    })();
-  }, [isTeam, router]);
+    });
+
+    return () => {
+      unsubSettings();
+      unsubRubric();
+      unsubTeams();
+      unsubReviews();
+    };
+  }, [ready, session?.role, router]);
 
   // Aggregate for current tab only
   useEffect(() => {
@@ -256,7 +282,11 @@ export default function Results() {
     return Number.isFinite(x) ? x.toFixed(4) : "";
   }
 
-  if (isTeam) {
+  if (isTeam && !settingsReady) {
+    return null;
+  }
+
+  if (isTeam && settings?.showTeamFeedback !== false) {
     return null;
   }
 
@@ -339,9 +369,7 @@ export default function Results() {
 
         {resultsHiddenForPublic ? (
           <div className="mt-6 rounded-2xl border border-gray-200 p-4 text-sm text-gray-600 dark:border-white/10 dark:text-gray-400">
-            Results are currently hidden. Admins can still view them here. To
-            make them public, toggle the results visibility in{" "}
-            <span className="font-medium">Admin → Settings</span>.
+            Results are currently hidden.
           </div>
         ) : null}
 
@@ -469,6 +497,8 @@ function Details({
   rubric: Rubric | null;
 }) {
   const crits = rubric?.criteria || [];
+  const criterionMax = (c: Criterion) =>
+    Math.max(1, Math.round(Number(c.maxScore ?? rubric?.scaleMax ?? 5) || 5));
 
   // newest first
   const sorted = useMemo(
@@ -498,7 +528,9 @@ function Details({
               {crits.map((c) => (
                 <th key={c.id} className="px-3 py-2 text-left">
                   {c.label}
-                  <div className="text-[10px] text-gray-500">wt {c.weight}</div>
+                  <div className="text-[10px] text-gray-500">
+                    wt {c.weight} | max {criterionMax(c)}
+                  </div>
                 </th>
               ))}
               <th className="px-3 py-2 text-left">Raw</th>
@@ -554,8 +586,8 @@ function Details({
       {/* Tiny legend */}
       {crits.length > 0 && (
         <div className="mt-3 text-[11px] text-gray-500 dark:text-gray-400">
-          Scores are from 0 to {rubric?.scaleMax ?? 5}. “Weighted” is the sum of
-          (criterion score × weight).
+          Each criterion uses its own score range (0 to max). “Weighted” is the
+          average of (criterion score × weight).
         </div>
       )}
     </div>

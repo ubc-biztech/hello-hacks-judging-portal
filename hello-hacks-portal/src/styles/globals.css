@@ -1,6 +1,26 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
-/* Optional: light/dark base */
-:root { color-scheme: light dark; }
-html, body, #__next { height: 100%; }
-body { @apply bg-white dark:bg-gray-900; }
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#__next {
+  min-height: 100%;
+}
+
+body {
+  font-family: "Avenir Next", "Nunito Sans", "Segoe UI", sans-serif;
+  background:
+    radial-gradient(60rem 40rem at 10% -10%, rgba(34, 211, 238, 0.11), transparent 55%),
+    radial-gradient(50rem 36rem at 100% 0%, rgba(99, 102, 241, 0.1), transparent 60%),
+    linear-gradient(180deg, #05070d 0%, #060a12 38%, #04070d 100%);
+  color: #dbe5f5;
+}
+
+::selection {
+  background: rgba(103, 232, 249, 0.28);
+  color: #f8fafc;
+}

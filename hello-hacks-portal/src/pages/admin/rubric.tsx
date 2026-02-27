@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import RoleGate from "@/components/RoleGate";
 import { db, EVENT_ID } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 
-type Crit = { id: string; label: string; weight: number };
+type Crit = { id: string; label: string; weight: number; maxScore?: number };
 type Rubric = { name: string; scaleMax: number; criteria: Crit[] };
 
 export default function RubricPage() {
@@ -26,15 +26,30 @@ function Page() {
     criteria: []
   });
   const [loading, setLoading] = useState(true);
-  const ref = doc(db, "events", EVENT_ID, "rubric", "default");
+  const ref = useMemo(
+    () => doc(db, "events", EVENT_ID, "rubric", "default"),
+    []
+  );
 
   useEffect(() => {
     (async () => {
       const snap = await getDoc(ref);
-      if (snap.exists()) setRubric(snap.data() as Rubric);
+      if (snap.exists()) {
+        const data = snap.data() as Rubric;
+        setRubric({
+          ...data,
+          criteria: (data.criteria || []).map((c) => ({
+            ...c,
+            maxScore: Math.max(
+              1,
+              Math.round(Number(c.maxScore ?? data.scaleMax ?? 5) || 5)
+            )
+          }))
+        });
+      }
       setLoading(false);
     })();
-  }, []);
+  }, [ref]);
 
   function addCrit() {
     setRubric((r) => ({
@@ -44,7 +59,8 @@ function Page() {
         {
           id: crypto.randomUUID().slice(0, 8),
           label: "New criterion",
-          weight: 1
+          weight: 1,
+          maxScore: r.scaleMax
         }
       ]
     }));
@@ -63,7 +79,19 @@ function Page() {
     }));
   }
   async function save() {
-    await setDoc(ref, rubric, { merge: true });
+    const normalized: Rubric = {
+      ...rubric,
+      scaleMax: Math.max(1, Math.round(Number(rubric.scaleMax || 1))),
+      criteria: rubric.criteria.map((c) => ({
+        ...c,
+        maxScore: Math.max(
+          1,
+          Math.round(Number(c.maxScore ?? rubric.scaleMax ?? 1))
+        )
+      }))
+    };
+    await setDoc(ref, normalized, { merge: true });
+    setRubric(normalized);
     alert("Rubric saved");
   }
 
@@ -83,7 +111,7 @@ function Page() {
           />
         </div>
         <div>
-          <label className="text-sm font-medium">Scale max</label>
+          <label className="text-sm font-medium">Default max score</label>
           <input
             type="number"
             min={1}
@@ -92,7 +120,7 @@ function Page() {
             onChange={(e) =>
               setRubric((r) => ({
                 ...r,
-                scaleMax: Math.max(1, Number(e.target.value || 1))
+                scaleMax: Math.max(1, Math.round(Number(e.target.value || 1)))
               }))
             }
           />
@@ -116,8 +144,8 @@ function Page() {
               key={c.id}
               className="rounded-xl border border-gray-200 p-3 dark:border-white/10"
             >
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-6">
-                <div className="sm:col-span-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-12">
+                <div className="sm:col-span-4">
                   <label className="text-xs font-medium">Label</label>
                   <input
                     className="mt-1 w-full rounded-md border border-gray-200 px-2 py-1 text-sm dark:border-white/10 dark:bg-transparent"
@@ -125,7 +153,7 @@ function Page() {
                     onChange={(e) => updateCrit(i, { label: e.target.value })}
                   />
                 </div>
-                <div>
+                <div className="sm:col-span-2">
                   <label className="text-xs font-medium">Weight</label>
                   <input
                     type="number"
@@ -139,6 +167,21 @@ function Page() {
                   />
                 </div>
                 <div className="sm:col-span-2">
+                  <label className="text-xs font-medium">Max score</label>
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    className="mt-1 w-24 rounded-md border border-gray-200 px-2 py-1 text-sm dark:border-white/10 dark:bg-transparent"
+                    value={c.maxScore ?? rubric.scaleMax}
+                    onChange={(e) =>
+                      updateCrit(i, {
+                        maxScore: Math.max(1, Math.round(Number(e.target.value || 1)))
+                      })
+                    }
+                  />
+                </div>
+                <div className="sm:col-span-3">
                   <label className="text-xs font-medium">ID (read-only)</label>
                   <input
                     disabled
@@ -146,7 +189,7 @@ function Page() {
                     value={c.id}
                   />
                 </div>
-                <div className="flex items-end">
+                <div className="flex items-end sm:justify-end">
                   <button
                     onClick={() => removeCrit(i)}
                     className="rounded-md bg-rose-600 px-3 py-1 text-xs font-semibold text-white"

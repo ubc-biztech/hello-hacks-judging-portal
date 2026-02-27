@@ -1,4 +1,9 @@
-export type Criterion = { id: string; label: string; weight: number };
+export type Criterion = {
+  id: string;
+  label: string;
+  weight: number;
+  maxScore?: number;
+};
 export type Rubric = { name: string; scaleMax: number; criteria: Criterion[] };
 
 export type Team = {
@@ -11,7 +16,7 @@ export type Team = {
   description?: string;
   imageUrls: string[];
   teamCode?: string;
-  createdAt?: any;
+  createdAt?: unknown;
 };
 
 export type Judge = {
@@ -32,5 +37,5 @@ export type Review = {
   feedback?: string;
   total: number;
   weightedTotal: number;
-  completedAt: any;
+  completedAt: unknown;
 };

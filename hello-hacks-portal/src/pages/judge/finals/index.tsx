@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import RoleGate from "@/components/RoleGate";
 import { useClientSession } from "@/lib/session";
@@ -8,14 +9,18 @@ import { db, EVENT_ID } from "@/lib/firebase";
 import {
   collection,
   doc,
-  getDoc,
-  getDocs,
+  onSnapshot,
   query,
   where
 } from "firebase/firestore";
 import Link from "next/link";
 
 type Team = { id: string; name: string; members?: string[] };
+type EventSettings = {
+  phase?: string;
+  finalsJudgeIds?: string[];
+  finalsTeamIds?: string[];
+};
 
 export default function JudgeFinalsIndex() {
   return (
@@ -28,44 +33,73 @@ export default function JudgeFinalsIndex() {
 }
 
 function Page() {
+  const router = useRouter();
   const { ready, session } = useClientSession();
   const judgeId = ready && session?.role === "judge" ? session.judgeId : null;
 
-  const [settings, setSettings] = useState<any>(null);
-  const [teams, setTeams] = useState<Team[]>([]);
+  const [settings, setSettings] = useState<EventSettings | null>(null);
+  const [teamMap, setTeamMap] = useState<Record<string, Team>>({});
+  const [finalsTeamIds, setFinalsTeamIds] = useState<string[]>([]);
   const [judgedIds, setJudgedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!ready || !judgeId) return;
-    (async () => {
-      const s = await getDoc(doc(db, "events", EVENT_ID));
-      const sData = s.exists() ? s.data() : {};
+    const unsubSettings = onSnapshot(doc(db, "events", EVENT_ID), (snap) => {
+      const sData = (snap.exists() ? snap.data() : {}) as EventSettings;
       setSettings(sData);
-
-      const finalsJudgeIds: string[] = sData.finalsJudgeIds || [];
-      if (!finalsJudgeIds.includes(judgeId)) {
-        alert("You are not assigned as a finals judge.");
+      if (sData.phase !== "finals") {
+        router.replace("/judge");
         return;
       }
+      const finalsJudgeIds: string[] = sData.finalsJudgeIds || [];
+      if (!finalsJudgeIds.includes(judgeId)) {
+        router.replace("/judge");
+        return;
+      }
+      setFinalsTeamIds((sData.finalsTeamIds || []) as string[]);
+    });
 
-      const finalsTeamIds: string[] = sData.finalsTeamIds || [];
-      const ts = await getDocs(collection(db, "events", EVENT_ID, "teams"));
-      const all: Team[] = [];
-      ts.forEach((d) => all.push({ id: d.id, ...(d.data() as any) }));
-      const finalsTeams = all.filter((t) => finalsTeamIds.includes(t.id));
-      setTeams(finalsTeams);
+    const unsubTeams = onSnapshot(
+      collection(db, "events", EVENT_ID, "teams"),
+      (snap) => {
+        const next: Record<string, Team> = {};
+        snap.forEach((d) => {
+          const data = d.data() as Partial<Team>;
+          next[d.id] = {
+            id: d.id,
+            name: data.name || d.id,
+            members: data.members
+          };
+        });
+        setTeamMap(next);
+      }
+    );
 
-      const rq = query(
-        collection(db, "events", EVENT_ID, "reviews"),
-        where("judgeId", "==", judgeId),
-        where("round", "==", "finals")
-      );
-      const rs = await getDocs(rq);
+    const rq = query(
+      collection(db, "events", EVENT_ID, "reviews"),
+      where("judgeId", "==", judgeId),
+      where("round", "==", "finals")
+    );
+    const unsubReviews = onSnapshot(rq, (snap) => {
       const done = new Set<string>();
-      rs.forEach((d) => done.add((d.data() as any).teamId));
+      snap.forEach((d) => {
+        const teamId = (d.data() as { teamId?: string }).teamId;
+        if (teamId) done.add(teamId);
+      });
       setJudgedIds(done);
-    })();
-  }, [ready, judgeId]);
+    });
+
+    return () => {
+      unsubSettings();
+      unsubTeams();
+      unsubReviews();
+    };
+  }, [ready, judgeId, router]);
+
+  const teams = useMemo(
+    () => finalsTeamIds.map((id) => teamMap[id]).filter(Boolean),
+    [finalsTeamIds, teamMap]
+  );
 
   const progress = useMemo(() => {
     const total = teams.length;

@@ -8,8 +8,7 @@ import { db, EVENT_ID } from "@/lib/firebase";
 import {
   collection,
   doc,
-  getDoc,
-  getDocs,
+  onSnapshot,
   query,
   setDoc,
   where
@@ -28,7 +27,27 @@ type Team = {
   imageUrls?: string[];
 };
 
-type Criterion = { id: string; label: string; weight: number };
+type Criterion = { id: string; label: string; weight: number; maxScore?: number };
+
+type EventSettings = {
+  phase?: string;
+  finalsJudgeIds?: string[];
+  finalsTeamIds?: string[];
+  anonymizeTeams?: boolean;
+};
+
+type ExistingReview = {
+  id: string;
+  teamId?: string;
+  judgeId?: string;
+  judgeName?: string;
+  round?: string;
+  scores?: Record<string, number>;
+  feedback?: string;
+  total?: number;
+  weightedTotal?: number;
+  createdAt?: Date;
+};
 
 export default function JudgeFinalTeam() {
   return (
@@ -48,59 +67,87 @@ function Page() {
   const judgeName =
     ready && session?.role === "judge" ? session.name || "Judge" : "";
 
-  const [settings, setSettings] = useState<any>(null);
+  const [settings, setSettings] = useState<EventSettings | null>(null);
   const [team, setTeam] = useState<Team | null>(null);
   const [rubric, setRubric] = useState<{
     criteria: Criterion[];
     scaleMax: number;
   }>({ criteria: [], scaleMax: 5 });
-  const [existing, setExisting] = useState<any>(null);
+  const [existing, setExisting] = useState<ExistingReview | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!ready || !judgeId || !teamId) return;
-    (async () => {
-      const s = await getDoc(doc(db, "events", EVENT_ID));
-      const sData = s.exists() ? s.data() : {};
-      setSettings(sData);
+    const unsubs: Array<() => void> = [];
 
-      const finalsJudgeIds: string[] = sData.finalsJudgeIds || [];
-      const finalsTeamIds: string[] = sData.finalsTeamIds || [];
-      if (!finalsJudgeIds.includes(judgeId)) {
-        alert("You are not assigned as a finals judge.");
-        router.replace("/judge/finals");
-        return;
-      }
-      if (!finalsTeamIds.includes(teamId)) {
-        alert("This team is not in finals.");
-        router.replace("/judge/finals");
-        return;
-      }
+    unsubs.push(
+      onSnapshot(doc(db, "events", EVENT_ID), (sSnap) => {
+        const sData = sSnap.exists() ? (sSnap.data() as EventSettings) : {};
+        setSettings(sData);
+        if (sData.phase !== "finals") {
+          router.replace("/judge");
+          return;
+        }
 
-      const tSnap = await getDoc(doc(db, "events", EVENT_ID, "teams", teamId));
-      if (tSnap.exists()) setTeam({ id: tSnap.id, ...(tSnap.data() as any) });
+        const finalsJudgeIds: string[] = sData.finalsJudgeIds || [];
+        const finalsTeamIds: string[] = sData.finalsTeamIds || [];
+        if (!finalsJudgeIds.includes(judgeId)) {
+          router.replace("/judge/finals");
+          return;
+        }
+        if (!finalsTeamIds.includes(teamId)) {
+          router.replace("/judge/finals");
+        }
+      })
+    );
 
-      const rSnap = await getDoc(
-        doc(db, "events", EVENT_ID, "rubric", "default")
-      );
-      if (rSnap.exists()) {
-        const d = rSnap.data() as any;
-        setRubric({
-          criteria: (d.criteria || []) as Criterion[],
-          scaleMax: Number(d.scaleMax || 5)
-        });
-      }
+    unsubs.push(
+      onSnapshot(doc(db, "events", EVENT_ID, "teams", teamId), (tSnap) => {
+        if (tSnap.exists()) {
+          setTeam({ id: tSnap.id, ...(tSnap.data() as Omit<Team, "id">) });
+        } else {
+          setTeam(null);
+        }
+      })
+    );
 
-      const q1 = query(
-        collection(db, "events", EVENT_ID, "reviews"),
-        where("teamId", "==", teamId),
-        where("judgeId", "==", judgeId),
-        where("round", "==", "finals")
-      );
-      const rs = await getDocs(q1);
-      if (!rs.empty)
-        setExisting({ id: rs.docs[0].id, ...(rs.docs[0].data() as any) });
-    })();
+    unsubs.push(
+      onSnapshot(doc(db, "events", EVENT_ID, "rubric", "default"), (rSnap) => {
+        if (rSnap.exists()) {
+          const d = rSnap.data() as {
+            criteria?: Criterion[];
+            scaleMax?: number;
+          };
+          setRubric({
+            criteria: (d.criteria || []) as Criterion[],
+            scaleMax: Number(d.scaleMax || 5)
+          });
+        }
+      })
+    );
+
+    const q1 = query(
+      collection(db, "events", EVENT_ID, "reviews"),
+      where("teamId", "==", teamId),
+      where("judgeId", "==", judgeId),
+      where("round", "==", "finals")
+    );
+    unsubs.push(
+      onSnapshot(q1, (rs) => {
+        if (!rs.empty) {
+          setExisting({
+            id: rs.docs[0].id,
+            ...(rs.docs[0].data() as Omit<ExistingReview, "id">)
+          });
+        } else {
+          setExisting(null);
+        }
+      })
+    );
+
+    return () => {
+      unsubs.forEach((u) => u());
+    };
   }, [ready, judgeId, teamId, router]);
 
   const weights = useMemo<Record<string, number>>(() => {
@@ -171,8 +218,10 @@ function Page() {
         weightedTotal,
         createdAt: new Date()
       });
-    } catch (e: any) {
-      alert(e.message || "Error submitting finals review.");
+    } catch (e: unknown) {
+      alert(
+        e instanceof Error ? e.message : "Error submitting finals review."
+      );
     } finally {
       setSubmitting(false);
     }

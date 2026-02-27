@@ -15,138 +15,162 @@ import {
 
 const RAW_TEAMS: { name: string; members: string[] }[] = [
   {
-    name: "Team Cook",
-    members: ["Prajna Nayak", "Mira Sehgal", "Rythem Shah", "Dibbo Roy"]
+    name: "Stoat Solutions",
+    members: ["Julianna Huang", "Saren Vathanak", "Daniel Ma", "Braydon Newman"]
   },
   {
-    name: "FA2",
-    members: ["Jeff Huang", "Fleming Yip", "Raymond Li", "Leo Wu"]
+    name: "GG Consulting",
+    members: ["Kezia Rijadi", "Newgen Bao", "Lynn Vu", "Megan Chan"]
   },
   {
-    name: "JayDeeCee",
-    members: ["Julianna Huang", "David Liu", "Caden Zhang"]
+    name: "SRB Consulting",
+    members: ["Hayden Lam", "Zane Tennison", "Lucy Shen", "Deniz Emre"]
   },
   {
-    name: "B2W",
-    members: ["Pete", "Ege Taslicay", "Shaurya Vardhan", "Andy Guo"]
+    name: "Team Techrat",
+    members: ["Michael Weng", "Sherry Li", "Joanna Yin", "Kohen Mahler"]
   },
   {
-    name: "intrlink",
+    name: "Team Nusa",
     members: [
-      "James Wong",
-      "Keanan Wongso",
-      "Klemens Venturio Djaja",
-      "Efe Bektas"
+      "Keanan Eldrian Wongso",
+      "Edbert Sunarpo",
+      "Clementie Freya Darmadji",
+      "Ibrasya Praditya Pohan"
     ]
   },
   {
-    name: "Goblin Gang",
-    members: ["Tin Yu Adam Tsang", "Rafee Ahsan", "Adrian Fung", "Roy Zheng"]
-  },
-  {
-    name: "Undecided1",
-    members: ["Nick Del Aguila", "Anush Mutyala", "Ellie Taghavi"]
-  },
-  {
-    name: "Goobers",
-    members: ["Chris Lee", "Daniel Zhang", "Kevin Gu", "Elishia Yeung"]
-  },
-  { name: "OrcaLake AI", members: ["Sai Pusuluri", "Rishabh Ghanty"] },
-  {
-    name: "a19z",
-    members: ["Jenise Yang", "Dawn Tang", "Joanna Xu", "Douglas Chen"]
-  },
-  { name: "Undecided2", members: ["Thomas Ah Sing"] },
-  {
-    name: "Supernova",
+    name: "HAE Consulting",
     members: [
+      "Hannah Azad Manjiri",
+      "Emily Lu",
+      "Allison Tao",
+      "Eliana Barbosa"
+    ]
+  },
+  {
+    name: "NextStrat Consulting",
+    members: ["Alisa Miriev", "Henry Rankin", "Karen Zhao", "Andee Achacoso"]
+  },
+  {
+    name: "HAC Advisors",
+    members: ["Chau Thai", "Animish Gupta", "Herman Thinnd", "None"]
+  },
+  {
+    name: "Bussin' Consulting",
+    members: ["Kyle Pon", "Reid Muddiman", "Bao Nguyen", "Catherine Jiang"]
+  },
+  {
+    name: "JACS of all trades",
+    members: ["Jenise Yang", "Samantha Ng", "Aditya Garg", "Carter Jaquette"]
+  },
+  {
+    name: "Natural Intelliegence Strategy",
+    members: [
+      "Adamya Gupta",
+      "Jayant Mansharamani",
+      "Jun Ishihara",
+      "Anton Bersamira"
+    ]
+  },
+  {
+    name: "Smurfs",
+    members: ["Thomas Collins", "Issac Lee", "Ryan Kakavand", "Johan Mendoza"]
+  },
+  {
+    name: "The Charge Consultants",
+    members: [
+      "Nyunn Sint Htoo",
+      "Alexis Danielle Widjaja",
+      "Kezia Annabel",
+      "Melody Annabelle Chaidrata"
+    ]
+  },
+  {
+    name: "99P consulting",
+    members: ["Thomas Jin", "Athalia Setiawan", "Wilfred Onwudiwe"]
+  },
+  {
+    name: "Encore",
+    members: ["Iman Tuan", "Deeptti Venugopal", "Chloe Lin", "VJ Jhang"]
+  },
+  {
+    name: "AMGS",
+    members: ["Anneke Phillips", "Sohanna Bains", "Gong Ma"]
+  },
+  {
+    name: "ConsultLink",
+    members: ["Jacky Xue", "Aryaman Deora", "Divyansh Tiwari", "Victor Thai"]
+  },
+  {
+    name: "Batavia Solutions",
+    members: [
+      "Kenji Naim Hutama",
+      "Matthew Anderson Sulistio",
+      "Matheus Marco Gunawan",
+      "Emily Razali"
+    ]
+  },
+  {
+    name: "Pacific Strategy Group",
+    members: [
+      "Aayush Patel",
+      "Rahul Paul",
+      "Joshua Wasylin",
+      "David (Jinjiang) Jiang"
+    ]
+  },
+  {
+    name: "LastMinute Consultant",
+    members: ["Min Cho", "Vincent Luong", "Bowen Cui", "David Huang"]
+  },
+  {
+    name: "Matcha Metrics",
+    members: [
+      "Jiratip Pairotkijja (Mio)",
       "Daniel Morgan",
-      "Danny Nosrati",
-      "Pavni Labade",
-      "Jiratip Pairotkijja"
+      "Theophile Cabre",
+      "Gabriel Su"
     ]
   },
-  { name: "Undecided3", members: ["Caleb Lo", "Tushar Jindal", "Roxy Chen"] },
   {
-    name: "Mango",
-    members: ["Caleab Onyango", "Iris Liu", "Daniel Agapov", "Kellie Ho"]
+    name: "The Lightningbirds",
+    members: ["Joseph Bell", "Jagman Sidhu", "Caleab Onyango", "Khang Huynh"]
   },
   {
-    name: "Zero Latency",
-    members: ["Nyamat Paul", "Inderveer Sidhu", "Adesh Malhans", "Derek Zhao"]
+    name: "Team 10",
+    members: ["Kai Wu", "Oakley Sun", "Elliot Goldstein", "Will Lourens"]
   },
   {
-    name: "YC 2026",
-    members: ["Edric Mei", "Noah Hynds", "Matthew Haryanto", "Fabian Siswanto"]
-  },
-  {
-    name: "Jays",
-    members: ["Reza Sabid", "Marshall Xie", "Stephen Qiao", "dua khan"]
-  },
-  {
-    name: "a67z",
+    name: "True North Consulting",
     members: [
-      "Saketh Poori",
-      "Achilles Michoulas",
-      "Matthew Gultom",
-      "Justin Pilson"
+      "Jaipaul Dhaliwal",
+      "Muskan Bhatia",
+      "Tanay Mahendru",
+      "Josh Evangelista"
     ]
   },
   {
-    name: "Pantera",
+    name: "The Girlshift",
+    members: ["Aimee", "Kamila", "Jade", "Saliha"]
+  },
+  {
+    name: "Penguins of Madagascar",
     members: [
-      "Kamila Maral",
-      "Masih Beigi Rizi",
-      "Ali Bazshoushtari",
-      "Kassiyet Adilbay"
+      "Tahsan Samin",
+      "Ahmad Khattab",
+      "Elimelech Tibuhinda",
+      "Nursultan Bekbossyn"
     ]
   },
   {
-    name: "Figma Fiends",
-    members: ["Bonnie Lu", "Quang Mai", "Carys Fong", "Cherry Wang"]
+    name: "Pareto Solutions",
+    members: ["James Gan", "Spenser Lim", "Saad Mumtaz", "Matthew Tam"]
   },
   {
-    name: "1000 Hands",
-    members: ["Ayden Lum", "Sage Enright", "Richard Cao", "Noah Marusenko"]
-  },
-  {
-    name: "watermelon gang",
-    members: ["Aaron Huang", "Ethan Chee", "David Kim", "Josh Park"]
-  },
-  {
-    name: "Connections",
-    members: ["Zack Ellington", "Jugaad Singh", "Aaron Rhim", "Arturo Spencer"]
-  },
-  {
-    name: "2Y2B",
-    members: [
-      "Hanson Yue",
-      "Aryan Bhatt",
-      "Jason Yee",
-      "Prakul Sanjith Selvakumar"
-    ]
-  },
-  {
-    name: "Mizar",
-    members: ["Daniel Chen", "Winsor Zhu", "Yikai Fang", "James Paquin"]
-  },
-  {
-    name: "Facebook",
-    members: ["Makoto HW", "Christopher Rodas Castillo", "Gabriella Leyne"]
-  },
-  { name: "MHAP", members: ["Bella Wang", "Jenny Shi", "Juanse Bercerra"] },
-  { name: "KNLR", members: ["Kentaro", "Nimesh", "Leia Chen", "Rosie Xuan"] },
-  {
-    name: "team-mango",
-    members: ["Connor Morrison", "Carson Jan", "Richard Mou", "Tianyu Xia"]
-  },
-  { name: "tpot", members: ["Matthew Chow", "Ella Schlaghecke"] },
-  {
-    name: "Growth Hormone",
-    members: ["Warren Dmello", "Medhansh Choubey", "Shaurya Thareja"]
-  },
-  { name: "Team Clueless", members: ["Chau Thai", "Anonymous Dingo Dog"] },
-  { name: "TraceForIt", members: ["Adi Garg", "Nicholas Yovanovich"] }
+    name: "Abhimanyu",
+    members: ["Kartikay Singh Rao"]
+  }
 ];
 
 function slugify(input: string) {

@@ -81,67 +81,104 @@ export default function Auth() {
     }
   }
 
+  const roleInfo: Record<
+    "admin" | "judge" | "team",
+    { title: string; hint: string; codeLabel: string; placeholder: string }
+  > = {
+    admin: {
+      title: "Admin",
+      hint: "Manage event.",
+      codeLabel: "Admin Code",
+      placeholder: "ADMIN-1234"
+    },
+    judge: {
+      title: "Judge",
+      hint: "Score assigned teams.",
+      codeLabel: "Judge Code",
+      placeholder: "JUDGE-1234"
+    },
+    team: {
+      title: "Team",
+      hint: "Edit submission.",
+      codeLabel: "Team Code",
+      placeholder: "TEAM-0001"
+    }
+  };
+
+  const current = roleInfo[role];
+
   return (
     <Layout>
-      <div className="mx-auto max-w-md p-6">
-        <h1 className="text-2xl font-bold">Welcome</h1>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          Sign in to continue.
-        </p>
+      <div className="mx-auto grid max-w-5xl gap-4 p-2 sm:p-4 lg:grid-cols-[1.05fr_1fr]">
+        <section className="rounded-3xl border border-white/10 bg-black/30 p-5 sm:p-6">
+          <span className="inline-flex rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-200">
+            TechStrat
+          </span>
+          <h1 className="mt-4 text-3xl font-semibold text-slate-100 sm:text-4xl">
+            Sign in
+          </h1>
+          <p className="mt-3 max-w-xl text-sm text-slate-400">
+            Pick role and enter code.
+          </p>
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            {(["admin", "judge", "team"] as const).map((r) => {
+              const selected = role === r;
+              return (
+                <button
+                  key={r}
+                  onClick={() => setRole(r)}
+                  className={[
+                    "rounded-2xl border px-3 py-3 text-left transition",
+                    selected
+                      ? "border-cyan-300/40 bg-cyan-300/10 text-slate-100"
+                      : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+                  ].join(" ")}
+                >
+                  <p className="text-sm font-semibold">{roleInfo[r].title}</p>
+                  <p className="mt-1 text-xs text-slate-400">{roleInfo[r].hint}</p>
+                </button>
+              );
+            })}
+          </div>
+        </section>
 
-        <div className="mt-6 grid grid-cols-3 gap-2">
-          {(["admin", "judge", "team"] as const).map((r) => (
+        <section className="rounded-3xl border border-white/10 bg-[#0b1221]/70 p-5 shadow-xl shadow-black/30 sm:p-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+            Sign In As {current.title}
+          </p>
+          <h2 className="mt-2 text-xl font-semibold text-slate-100">
+            Code
+          </h2>
+          <p className="mt-2 text-sm text-slate-400">{current.hint}</p>
+
+          <div className="mt-5">
+            <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+              {current.codeLabel}
+            </label>
+            <input
+              className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-sm text-slate-100 outline-none ring-0 placeholder:text-slate-500 focus:border-cyan-300/40"
+              placeholder={current.placeholder}
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+            />
+            {err && <p className="mt-2 text-sm text-rose-400">{err}</p>}
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-2">
             <button
-              key={r}
-              onClick={() => setRole(r)}
-              className={`rounded-lg border px-3 py-2 text-sm font-medium ${
-                role === r
-                  ? "border-indigo-600 text-indigo-600"
-                  : "border-gray-200 text-gray-700 dark:border-white/10 dark:text-gray-300"
-              }`}
+              onClick={signIn}
+              className="rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
             >
-              {r.toUpperCase()}
+              Continue
             </button>
-          ))}
-        </div>
-
-        <div className="mt-4">
-          <label className="text-sm font-medium">
-            {role === "admin"
-              ? "Admin Code"
-              : role === "judge"
-              ? "Judge Code"
-              : "Team Code"}
-          </label>
-          <input
-            className="mt-1 w-full rounded-lg border border-gray-200 p-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:border-white/10 dark:bg-transparent"
-            placeholder={
-              role === "team"
-                ? "TEAM-0001"
-                : role === "judge"
-                ? "JUDGE-1234"
-                : "ADMIN-1234"
-            }
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-          />
-          {err && <p className="mt-2 text-sm text-rose-600">{err}</p>}
-        </div>
-
-        <div className="mt-6 flex gap-2">
-          <button
-            onClick={signIn}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
-          >
-            Continue
-          </button>
-          <button
-            onClick={() => router.push("/results")}
-            className="rounded-lg border border-gray-200 px-4 py-2 text-sm dark:border-white/10"
-          >
-            View Results
-          </button>
-        </div>
+            <button
+              onClick={() => router.push("/results")}
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
+            >
+              View Results
+            </button>
+          </div>
+        </section>
       </div>
     </Layout>
   );

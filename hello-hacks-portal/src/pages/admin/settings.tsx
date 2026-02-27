@@ -12,6 +12,7 @@ type Settings = {
   maxImages?: number;
   lockSubmissions?: boolean;
   showResults?: boolean;
+  showTeamFeedback?: boolean;
   allowJudgeSeeOthers?: boolean;
   anonymizeTeams?: boolean;
   phase?: "submission" | "judging" | "closed";
@@ -30,11 +31,12 @@ export default function AdminSettings() {
 function Page() {
   const ref = doc(db, "events", EVENT_ID);
   const [s, setS] = useState<Settings>({
-    name: "KickStart",
+    name: "TechStrat",
     requiredJudgeCount: 3,
     maxImages: 10,
     lockSubmissions: false,
     showResults: true,
+    showTeamFeedback: true,
     allowJudgeSeeOthers: true,
     anonymizeTeams: false,
     phase: "submission"
@@ -137,6 +139,17 @@ function Page() {
             }
           />
           Public results page
+        </label>
+
+        <label className="mt-2 inline-flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={s.showTeamFeedback !== false}
+            onChange={(e) =>
+              setS((v) => ({ ...v, showTeamFeedback: e.target.checked }))
+            }
+          />
+          Teams can view own feedback
         </label>
 
         <label className="mt-2 inline-flex items-center gap-2 text-sm">
