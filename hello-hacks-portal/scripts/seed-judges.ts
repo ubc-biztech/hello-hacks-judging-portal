@@ -54,21 +54,19 @@ function cleanId(s: string) {
 }
 
 const judgesList = [
-  "Leonidas Zhang",
-  "Arielle Murad",
-  "Riza Kazemi",
-  "Bhoomi Shah",
-  "Alex Shin",
-  "Camille Walters",
-  "Pavan Khiani",
-  "Gagan Dhillon",
-  "Mahak Mithani",
-  "Brian Bondoc",
-  "Simranjit Singh Sran",
-  "Liuba Azarova",
-  "Edward Hou",
-  "Emma Gray",
-  "Zoya Khurana"
+  "Chang Han",
+  "Shantanu Mehta",
+  "Aaron Stuart",
+  "Gabe Ravacci",
+  "Angus Fudge",
+  "Mai Trinh",
+  "Rahul Rao",
+  "Kevin Dhir",
+  "Abhay Ghatpande",
+  "Melaniia Volkodav",
+  "Tony Hui",
+  "Alexander Dungate",
+  "Tyler Nee"
 ];
 
 const judges = judgesList.map((name) => {
@@ -77,7 +75,7 @@ const judges = judgesList.map((name) => {
     id: `judge_${cleanId(name)}`,
     data: {
       name,
-      code: `${first}-001`,
+      code: `${first}`,
       isAdmin: false,
       assignedTeamIds: [] as string[]
     }
