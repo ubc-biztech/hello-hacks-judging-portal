@@ -135,7 +135,9 @@ export default function Auth() {
                   ].join(" ")}
                 >
                   <p className="text-sm font-semibold">{roleInfo[r].title}</p>
-                  <p className="mt-1 text-xs text-slate-400">{roleInfo[r].hint}</p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    {roleInfo[r].hint}
+                  </p>
                 </button>
               );
             })}
@@ -146,9 +148,7 @@ export default function Auth() {
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
             Sign In As {current.title}
           </p>
-          <h2 className="mt-2 text-xl font-semibold text-slate-100">
-            Code
-          </h2>
+          <h2 className="mt-2 text-xl font-semibold text-slate-100">Code</h2>
           <p className="mt-2 text-sm text-slate-400">{current.hint}</p>
 
           <div className="mt-5">
@@ -170,12 +170,6 @@ export default function Auth() {
               className="rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
             >
               Continue
-            </button>
-            <button
-              onClick={() => router.push("/results")}
-              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
-            >
-              View Results
             </button>
           </div>
         </section>
