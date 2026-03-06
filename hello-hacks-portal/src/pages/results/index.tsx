@@ -45,7 +45,6 @@ export default function Results() {
   const [rows, setRows] = useState<Row[]>([]);
   const [teams, setTeams] = useState<Record<string, Team>>({});
   const [settings, setSettings] = useState<any>(null);
-  const [settingsReady, setSettingsReady] = useState(false);
   const [reviewsByTeam, setReviewsByTeam] = useState<Record<string, Review[]>>(
     {}
   );
@@ -55,12 +54,22 @@ export default function Results() {
   const [hideUnderCovered, setHideUnderCovered] = useState(true);
 
   const isAdmin = ready && session?.role === "admin";
+  const isJudge = ready && session?.role === "judge";
   const allowJudgeSeeOthers = !!settings?.allowJudgeSeeOthers;
-  const isTeam = ready && session?.role === "team";
+  const canViewFullResults = isAdmin || isJudge;
   const router = useRouter();
 
   useEffect(() => {
     if (!ready) return;
+    if (!session) {
+      router.replace("/auth");
+      return;
+    }
+    if (session.role === "team") {
+      router.replace("/team/feedback");
+      return;
+    }
+
     const eventRef = doc(db, "events", EVENT_ID);
     const rubricRef = doc(db, "events", EVENT_ID, "rubric", "default");
     const teamsRef = collection(db, "events", EVENT_ID, "teams");
@@ -74,12 +83,8 @@ export default function Results() {
       (snap) => {
         const sData = snap.exists() ? snap.data() : {};
         setSettings(sData);
-        setSettingsReady(true);
-        if (session?.role === "team" && sData.showTeamFeedback !== false) {
-          router.replace("/team/feedback");
-        }
       },
-      () => setSettingsReady(true)
+      () => undefined
     );
 
     const unsubRubric = onSnapshot(rubricRef, (r) => {
@@ -124,7 +129,7 @@ export default function Results() {
       unsubTeams();
       unsubReviews();
     };
-  }, [ready, session?.role, router]);
+  }, [ready, session, router]);
 
   // Aggregate for current tab only
   useEffect(() => {
@@ -160,11 +165,6 @@ export default function Results() {
   }, [reviewsByTeam, tab, settings?.requiredJudgeCount]);
 
   const reqCount = Number(settings?.requiredJudgeCount ?? 3);
-
-  const resultsHiddenForPublic =
-    settings &&
-    ((tab === "prelim" && settings.showResults === false && !isAdmin) ||
-      (tab === "finals" && settings.showResultsFinals === false && !isAdmin));
 
   const canShowDetails = isAdmin || allowJudgeSeeOthers;
 
@@ -282,11 +282,7 @@ export default function Results() {
     return Number.isFinite(x) ? x.toFixed(4) : "";
   }
 
-  if (isTeam && !settingsReady) {
-    return null;
-  }
-
-  if (isTeam && settings?.showTeamFeedback !== false) {
+  if (!ready || !canViewFullResults) {
     return null;
   }
 
@@ -330,14 +326,6 @@ export default function Results() {
               ))}
             </div>
 
-            {/* Visibility note */}
-            {resultsHiddenForPublic && (
-              <span className="rounded-md bg-amber-500/10 px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-400">
-                {tab === "prelim" ? "Prelim" : "Finals"} results hidden to
-                public
-              </span>
-            )}
-
             {/* Coverage filter (admins only) */}
             {isAdmin && (
               <label className="inline-flex items-center gap-2 text-xs">
@@ -366,12 +354,6 @@ export default function Results() {
             </button>
           </div>
         </div>
-
-        {resultsHiddenForPublic ? (
-          <div className="mt-6 rounded-2xl border border-gray-200 p-4 text-sm text-gray-600 dark:border-white/10 dark:text-gray-400">
-            Results are currently hidden.
-          </div>
-        ) : null}
 
         {/* Leaderboard */}
         <div className="mt-6 overflow-x-auto rounded-2xl border border-gray-200 dark:border-white/10">

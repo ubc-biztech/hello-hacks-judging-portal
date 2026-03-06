@@ -181,13 +181,6 @@ const NAV_BY_ROLE: Record<Role, NavSection[]> = {
           hint: "Judge notes and scores",
           icon: ClipboardDocumentListIcon,
           match: /^\/team\/feedback$/
-        },
-        {
-          name: "Results",
-          href: "/results",
-          hint: "Public standings view",
-          icon: ChartBarSquareIcon,
-          match: /^\/results$/
         }
       ]
     }
@@ -202,13 +195,6 @@ const NAV_BY_ROLE: Record<Role, NavSection[]> = {
           hint: "Admin, judge, or team access",
           icon: ShieldCheckIcon,
           match: /^\/auth$/
-        },
-        {
-          name: "Results",
-          href: "/results",
-          hint: "Leaderboard and team rankings",
-          icon: ChartBarSquareIcon,
-          match: /^\/results$/
         }
       ]
     }

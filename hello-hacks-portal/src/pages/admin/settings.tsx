@@ -11,7 +11,6 @@ type Settings = {
   requiredJudgeCount?: number;
   maxImages?: number;
   lockSubmissions?: boolean;
-  showResults?: boolean;
   showTeamFeedback?: boolean;
   allowJudgeSeeOthers?: boolean;
   anonymizeTeams?: boolean;
@@ -35,7 +34,6 @@ function Page() {
     requiredJudgeCount: 3,
     maxImages: 10,
     lockSubmissions: false,
-    showResults: true,
     showTeamFeedback: true,
     allowJudgeSeeOthers: true,
     anonymizeTeams: false,
@@ -128,17 +126,6 @@ function Page() {
             }
           />
           Lock team submissions
-        </label>
-
-        <label className="mt-2 inline-flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={!!s.showResults}
-            onChange={(e) =>
-              setS((v) => ({ ...v, showResults: e.target.checked }))
-            }
-          />
-          Public results page
         </label>
 
         <label className="mt-2 inline-flex items-center gap-2 text-sm">

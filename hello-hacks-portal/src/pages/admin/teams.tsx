@@ -43,7 +43,8 @@ function Page() {
   const [list, setList] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ name: "", members: "", teamCode: "" });
-  const admin = getSession() as any;
+  const admin = getSession();
+  const adminCode = admin?.role === "admin" ? admin.adminCode : "ADMIN";
 
   async function load() {
     setLoading(true);
@@ -52,7 +53,21 @@ function Page() {
       orderBy("name")
     );
     const snap = await getDocs(qt);
-    setList(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));
+    setList(
+      snap.docs.map((d) => {
+        const data = d.data() as Partial<Team>;
+        return {
+          id: d.id,
+          name: data.name || "",
+          members: Array.isArray(data.members) ? data.members : [],
+          techStack: Array.isArray(data.techStack) ? data.techStack : [],
+          teamCode: data.teamCode || "",
+          github: data.github || "",
+          devpost: data.devpost || "",
+          description: data.description || ""
+        };
+      })
+    );
     setLoading(false);
   }
   useEffect(() => {
@@ -75,8 +90,8 @@ function Page() {
       imageUrls: [],
       createdAt: serverTimestamp(),
       _adminJudgeId: "admin",
-      _adminJudgeCode: admin?.adminCode || "ADMIN"
-    } as any);
+      _adminJudgeCode: adminCode
+    });
     setForm({ name: "", members: "", teamCode: "" });
     await load();
   }
@@ -91,8 +106,8 @@ function Page() {
       devpost: t.devpost || "",
       description: t.description || "",
       _adminJudgeId: "admin",
-      _adminJudgeCode: admin?.adminCode || "ADMIN"
-    } as any);
+      _adminJudgeCode: adminCode
+    });
     await load();
   }
 
@@ -102,9 +117,46 @@ function Page() {
     await load();
   }
 
+  function exportTeamsCsv() {
+    const csvCell = (value: unknown) => {
+      const s = value == null ? "" : String(value);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const header = ["Team Name", "Team Code", "Team ID", "Members"];
+    const lines = [header.map(csvCell).join(",")];
+
+    list.forEach((team) => {
+      lines.push(
+        [
+          csvCell(team.name || ""),
+          csvCell(team.teamCode || ""),
+          csvCell(team.id),
+          csvCell((team.members || []).join(", "))
+        ].join(",")
+      );
+    });
+
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${EVENT_ID}-teams-codes.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="mx-auto max-w-6xl p-6">
-      <h1 className="text-2xl font-bold">Teams</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">Teams</h1>
+        <button
+          onClick={exportTeamsCsv}
+          disabled={loading || list.length === 0}
+          className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:hover:bg-white/5"
+        >
+          Export Teams + Codes
+        </button>
+      </div>
 
       <div className="mt-4 rounded-2xl border border-gray-200 p-4 dark:border-white/10">
         <div className="text-lg font-semibold">Create Team</div>
@@ -309,20 +361,20 @@ function EditableTeamRow({
           <input
             className="w-56 rounded-md border border-gray-200 px-2 py-1 text-xs font-mono dark:border-white/10 dark:bg-transparent"
             placeholder="GitHub URL"
-            value={(edit as any).github || ""}
+            value={edit.github || ""}
             onChange={(e) => setEdit({ ...edit, github: e.target.value })}
           />
           <input
             className="w-56 rounded-md border border-gray-200 px-2 py-1 text-xs font-mono dark:border-white/10 dark:bg-transparent"
             placeholder="Devpost URL"
-            value={(edit as any).devpost || ""}
+            value={edit.devpost || ""}
             onChange={(e) => setEdit({ ...edit, devpost: e.target.value })}
           />
           <textarea
             className="w-56 rounded-md border border-gray-200 px-2 py-1 text-xs dark:border-white/10 dark:bg-transparent"
             placeholder="Description"
             rows={3}
-            value={(edit as any).description || ""}
+            value={edit.description || ""}
             onChange={(e) => setEdit({ ...edit, description: e.target.value })}
           />
         </div>
