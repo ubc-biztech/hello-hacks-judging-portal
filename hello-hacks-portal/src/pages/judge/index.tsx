@@ -61,7 +61,6 @@ function Page() {
           id: d.id,
           name: data.name || d.id,
           members: data.members || [],
-          techStack: data.techStack || [],
           github: data.github,
           devpost: data.devpost,
           description: data.description,

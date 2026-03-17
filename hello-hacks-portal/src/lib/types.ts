@@ -10,7 +10,6 @@ export type Team = {
   id: string;
   name: string;
   members: string[];
-  techStack: string[];
   github?: string;
   devpost?: string;
   description?: string;

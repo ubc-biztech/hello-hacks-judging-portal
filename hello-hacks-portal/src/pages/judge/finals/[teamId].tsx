@@ -20,7 +20,6 @@ type Team = {
   id: string;
   name: string;
   members?: string[];
-  techStack?: string[];
   github?: string;
   devpost?: string;
   description?: string;
@@ -254,12 +253,6 @@ function Page() {
               <div>
                 <span className="font-medium">Members:</span>{" "}
                 {team.members.join(", ")}
-              </div>
-            ) : null}
-            {team.techStack?.length ? (
-              <div>
-                <span className="font-medium">Tech:</span>{" "}
-                {team.techStack.join(", ")}
               </div>
             ) : null}
             {team.github ? (

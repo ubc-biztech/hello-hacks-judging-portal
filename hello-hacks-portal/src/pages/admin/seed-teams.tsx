@@ -288,7 +288,6 @@ function Page() {
           {
             name: row.name,
             members: row.members,
-            techStack: [],
             github: "",
             devpost: "",
             description: "",

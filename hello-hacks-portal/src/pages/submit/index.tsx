@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Layout from "@/components/Layout";
 import RoleGate from "@/components/RoleGate";
 import { db, EVENT_ID, storage } from "@/lib/firebase";
-import { doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { deleteField, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useClientSession } from "@/lib/session";
 
@@ -20,7 +20,6 @@ type TeamDoc = {
   github?: string;
   devpost?: string;
   description?: string;
-  techStack?: string[];
   imageUrls?: string[];
 };
 
@@ -33,7 +32,6 @@ function Page() {
   const [github, setGithub] = useState("");
   const [devpost, setDevpost] = useState("");
   const [desc, setDesc] = useState("");
-  const [tech, setTech] = useState("");
   const [files, setFiles] = useState<FileList | null>(null);
 
   useEffect(() => {
@@ -62,7 +60,6 @@ function Page() {
           setGithub(data.github || "");
           setDevpost(data.devpost || "");
           setDesc(data.description || "");
-          setTech((data.techStack || []).join(", "));
         })
       );
     }
@@ -107,12 +104,9 @@ function Page() {
         github,
         devpost,
         description: desc,
-        techStack: tech
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
         imageUrls,
-        teamCode: team.teamCode || ""
+        teamCode: team.teamCode || "",
+        techStack: deleteField()
       });
       setTeam((current) => {
         if (!current) return current;
@@ -121,10 +115,6 @@ function Page() {
           github,
           devpost,
           description: desc,
-          techStack: tech
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean),
           imageUrls
         };
       });
@@ -186,12 +176,6 @@ function Page() {
                 rows={5}
                 className="w-full rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-slate-100 placeholder:text-slate-500"
                 placeholder="Description"
-              />
-              <input
-                value={tech}
-                onChange={(e) => setTech(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-slate-100 placeholder:text-slate-500"
-                placeholder="Tech stack (comma-separated)"
               />
 
               <div className="rounded-2xl border border-white/10 bg-black/20 p-3">

@@ -7,6 +7,7 @@ import { db, EVENT_ID } from "@/lib/firebase";
 import {
   addDoc,
   collection,
+  deleteField,
   deleteDoc,
   doc,
   getDocs,
@@ -22,7 +23,6 @@ type Team = {
   id: string;
   name: string;
   members: string[];
-  techStack: string[];
   teamCode?: string;
   github?: string;
   devpost?: string;
@@ -60,7 +60,6 @@ function Page() {
           id: d.id,
           name: data.name || "",
           members: Array.isArray(data.members) ? data.members : [],
-          techStack: Array.isArray(data.techStack) ? data.techStack : [],
           teamCode: data.teamCode || "",
           github: data.github || "",
           devpost: data.devpost || "",
@@ -82,7 +81,6 @@ function Page() {
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean),
-      techStack: [],
       github: "",
       devpost: "",
       description: "",
@@ -100,11 +98,11 @@ function Page() {
     await updateDoc(doc(db, "events", EVENT_ID, "teams", t.id), {
       name: t.name,
       members: t.members,
-      techStack: t.techStack,
       teamCode: t.teamCode || "",
       github: t.github || "",
       devpost: t.devpost || "",
       description: t.description || "",
+      techStack: deleteField(),
       _adminJudgeId: "admin",
       _adminJudgeCode: adminCode
     });
@@ -195,7 +193,6 @@ function Page() {
               <th className="px-4 py-2 text-left">Team</th>
               <th className="px-4 py-2 text-left">Members</th>
               <th className="px-4 py-2 text-left">Team Code</th>
-              <th className="px-4 py-2 text-left">Tech</th>
               <th className="px-4 py-2 text-left">Links</th>
               <th className="px-4 py-2"></th>
             </tr>
@@ -203,7 +200,7 @@ function Page() {
           <tbody>
             {loading && (
               <tr>
-                <td className="px-4 py-4" colSpan={6}>
+                <td className="px-4 py-4" colSpan={5}>
                   Loading…
                 </td>
               </tr>
@@ -221,7 +218,7 @@ function Page() {
               <tr>
                 <td
                   className="px-4 py-4 text-gray-500 dark:text-gray-400"
-                  colSpan={6}
+                  colSpan={5}
                 >
                   No teams yet.
                 </td>
@@ -245,7 +242,6 @@ function EditableTeamRow({
 }) {
   const [edit, setEdit] = useState<Team>({ ...t });
   const [member, setMember] = useState("");
-  const [techItem, setTechItem] = useState("");
 
   function addMember() {
     const m = member.trim();
@@ -257,18 +253,6 @@ function EditableTeamRow({
     setEdit((e) => ({
       ...e,
       members: e.members.filter((_, idx) => idx !== i)
-    }));
-  }
-  function addTech() {
-    const m = techItem.trim();
-    if (!m) return;
-    setEdit((e) => ({ ...e, techStack: [...(e.techStack || []), m] }));
-    setTechItem("");
-  }
-  function removeTech(i: number) {
-    setEdit((e) => ({
-      ...e,
-      techStack: e.techStack.filter((_, idx) => idx !== i)
     }));
   }
 
@@ -321,39 +305,6 @@ function EditableTeamRow({
           value={edit.teamCode || ""}
           onChange={(e) => setEdit({ ...edit, teamCode: e.target.value })}
         />
-      </td>
-
-      <td className="px-4 py-3">
-        <div className="flex flex-wrap gap-2">
-          {(edit.techStack || []).map((m, i) => (
-            <span
-              key={i}
-              className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2 py-1 text-xs dark:border-white/10"
-            >
-              {m}
-              <button
-                className="text-gray-500 hover:text-rose-600"
-                onClick={() => removeTech(i)}
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-        <div className="mt-2 flex gap-2">
-          <input
-            className="min-w-0 flex-1 rounded-md border border-gray-200 px-2 py-1 text-sm dark:border-white/10 dark:bg-transparent"
-            placeholder="Add tech"
-            value={techItem}
-            onChange={(e) => setTechItem(e.target.value)}
-          />
-          <button
-            onClick={addTech}
-            className="rounded-md border border-gray-200 px-2 text-xs dark:border-white/10"
-          >
-            Add
-          </button>
-        </div>
       </td>
 
       <td className="px-4 py-3">
