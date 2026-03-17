@@ -4,10 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import RoleGate from "@/components/RoleGate";
 import { db, EVENT_ID } from "@/lib/firebase";
+import { normalizeRubric } from "@/lib/judging";
+import { Criterion, Rubric } from "@/lib/types";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-
-type Crit = { id: string; label: string; weight: number; maxScore?: number };
-type Rubric = { name: string; scaleMax: number; criteria: Crit[] };
 
 export default function RubricPage() {
   return (
@@ -20,11 +19,7 @@ export default function RubricPage() {
 }
 
 function Page() {
-  const [rubric, setRubric] = useState<Rubric>({
-    name: "Default",
-    scaleMax: 5,
-    criteria: []
-  });
+  const [rubric, setRubric] = useState<Rubric>(normalizeRubric());
   const [loading, setLoading] = useState(true);
   const ref = useMemo(
     () => doc(db, "events", EVENT_ID, "rubric", "default"),
@@ -35,17 +30,9 @@ function Page() {
     (async () => {
       const snap = await getDoc(ref);
       if (snap.exists()) {
-        const data = snap.data() as Rubric;
-        setRubric({
-          ...data,
-          criteria: (data.criteria || []).map((c) => ({
-            ...c,
-            maxScore: Math.max(
-              1,
-              Math.round(Number(c.maxScore ?? data.scaleMax ?? 5) || 5)
-            )
-          }))
-        });
+        setRubric(normalizeRubric(snap.data() as Partial<Rubric>));
+      } else {
+        setRubric(normalizeRubric());
       }
       setLoading(false);
     })();
@@ -59,13 +46,14 @@ function Page() {
         {
           id: crypto.randomUUID().slice(0, 8),
           label: "New criterion",
+          description: "",
           weight: 1,
           maxScore: r.scaleMax
         }
       ]
     }));
   }
-  function updateCrit(i: number, patch: Partial<Crit>) {
+  function updateCrit(i: number, patch: Partial<Criterion>) {
     setRubric((r) => {
       const arr = r.criteria.slice();
       arr[i] = { ...arr[i], ...patch };
@@ -79,17 +67,7 @@ function Page() {
     }));
   }
   async function save() {
-    const normalized: Rubric = {
-      ...rubric,
-      scaleMax: Math.max(1, Math.round(Number(rubric.scaleMax || 1))),
-      criteria: rubric.criteria.map((c) => ({
-        ...c,
-        maxScore: Math.max(
-          1,
-          Math.round(Number(c.maxScore ?? rubric.scaleMax ?? 1))
-        )
-      }))
-    };
+    const normalized = normalizeRubric(rubric);
     await setDoc(ref, normalized, { merge: true });
     setRubric(normalized);
     alert("Rubric saved");
@@ -145,12 +123,21 @@ function Page() {
               className="rounded-xl border border-gray-200 p-3 dark:border-white/10"
             >
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-12">
-                <div className="sm:col-span-4">
+                <div className="sm:col-span-5">
                   <label className="text-xs font-medium">Label</label>
                   <input
                     className="mt-1 w-full rounded-md border border-gray-200 px-2 py-1 text-sm dark:border-white/10 dark:bg-transparent"
                     value={c.label}
                     onChange={(e) => updateCrit(i, { label: e.target.value })}
+                  />
+                  <label className="mt-3 block text-xs font-medium">Description</label>
+                  <textarea
+                    rows={4}
+                    className="mt-1 w-full rounded-md border border-gray-200 px-2 py-1 text-sm dark:border-white/10 dark:bg-transparent"
+                    value={c.description || ""}
+                    onChange={(e) =>
+                      updateCrit(i, { description: e.target.value })
+                    }
                   />
                 </div>
                 <div className="sm:col-span-2">

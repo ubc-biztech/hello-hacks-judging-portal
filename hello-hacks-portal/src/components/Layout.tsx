@@ -145,7 +145,14 @@ const NAV_BY_ROLE: Record<Role, NavSection[]> = {
           href: "/judge",
           hint: "Review your prelim queue",
           icon: QueueListIcon,
-          match: /^\/judge(?:\/(?!finals(?:\/|$))[^/]+)?$/
+          match: /^\/judge(?:\/(?!finals(?:\/|$)|rubric(?:\/|$))[^/]+)?$/
+        },
+        {
+          name: "Rubric",
+          href: "/judge/rubric",
+          hint: "Scoring reference",
+          icon: ClipboardDocumentCheckIcon,
+          match: /^\/judge\/rubric$/
         },
         {
           name: "Finals Queue",
@@ -266,6 +273,11 @@ const PAGE_INFO: PageInfo[] = [
     match: /^\/judge\/finals$/,
     title: "Finals Queue",
     subtitle: "Track and complete finals judging assignments."
+  },
+  {
+    match: /^\/judge\/rubric$/,
+    title: "Rubric",
+    subtitle: "Scoring reference and category descriptions."
   },
   {
     match: /^\/judge\/finals\/.+$/,

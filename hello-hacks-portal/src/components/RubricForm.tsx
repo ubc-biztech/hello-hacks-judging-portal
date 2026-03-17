@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import { Criterion } from "@/lib/types";
-
-function criterionMax(c: Criterion, fallback: number) {
-  return Math.max(1, Math.round(Number(c.maxScore ?? fallback ?? 5) || 5));
-}
+import { criterionMax, rubricUsesPointTotals } from "@/lib/judging";
 
 function clampScore(value: number, max: number) {
   const n = Number(value);
@@ -18,10 +15,12 @@ export default function RubricForm({
   submitting,
   defaultScores,
   defaultFeedback,
+  scoreMode,
   readOnly = false
 }: {
   criteria: Criterion[];
   scaleMax: number;
+  scoreMode?: "points" | "weighted";
   submitting?: boolean;
   onSubmit: (
     scores: Record<string, number>,
@@ -36,6 +35,7 @@ export default function RubricForm({
 }) {
   const [scores, setScores] = useState<Record<string, number>>({});
   const [feedback, setFeedback] = useState("");
+  const pointTotals = rubricUsesPointTotals({ criteria, scaleMax, scoreMode });
 
   useEffect(() => {
     const s: Record<string, number> = {};
@@ -75,11 +75,19 @@ export default function RubricForm({
               className="rounded-xl border border-gray-200 p-4 dark:border-white/10"
             >
               <div className="mb-2 flex items-center justify-between">
-                <div className="font-medium text-gray-900 dark:text-white">
-                  {c.label}
+                <div>
+                  <div className="font-medium text-gray-900 dark:text-white">
+                    {c.label}
+                  </div>
+                  {c.description && (
+                    <p className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
+                      {c.description}
+                    </p>
+                  )}
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  Weight: {c.weight}
+                <div className="text-right text-xs text-gray-500 dark:text-gray-400">
+                  <div>Max {max}</div>
+                  {!pointTotals && <div>Weight {c.weight}</div>}
                 </div>
               </div>
 

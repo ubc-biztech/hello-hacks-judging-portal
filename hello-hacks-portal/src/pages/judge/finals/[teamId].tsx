@@ -1,10 +1,12 @@
 "use client";
 
 import { useRouter } from "next/router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Layout from "@/components/Layout";
 import RoleGate from "@/components/RoleGate";
 import { db, EVENT_ID } from "@/lib/firebase";
+import { computeReviewTotals, normalizeRubric } from "@/lib/judging";
+import { Rubric } from "@/lib/types";
 import {
   collection,
   doc,
@@ -25,8 +27,6 @@ type Team = {
   description?: string;
   imageUrls?: string[];
 };
-
-type Criterion = { id: string; label: string; weight: number; maxScore?: number };
 
 type EventSettings = {
   phase?: string;
@@ -68,10 +68,7 @@ function Page() {
 
   const [settings, setSettings] = useState<EventSettings | null>(null);
   const [team, setTeam] = useState<Team | null>(null);
-  const [rubric, setRubric] = useState<{
-    criteria: Criterion[];
-    scaleMax: number;
-  }>({ criteria: [], scaleMax: 5 });
+  const [rubric, setRubric] = useState<Rubric>(normalizeRubric());
   const [existing, setExisting] = useState<ExistingReview | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -113,14 +110,9 @@ function Page() {
     unsubs.push(
       onSnapshot(doc(db, "events", EVENT_ID, "rubric", "default"), (rSnap) => {
         if (rSnap.exists()) {
-          const d = rSnap.data() as {
-            criteria?: Criterion[];
-            scaleMax?: number;
-          };
-          setRubric({
-            criteria: (d.criteria || []) as Criterion[],
-            scaleMax: Number(d.scaleMax || 5)
-          });
+          setRubric(normalizeRubric(rSnap.data() as Partial<Rubric>));
+        } else {
+          setRubric(normalizeRubric());
         }
       })
     );
@@ -149,12 +141,6 @@ function Page() {
     };
   }, [ready, judgeId, teamId, router]);
 
-  const weights = useMemo<Record<string, number>>(() => {
-    const m: Record<string, number> = {};
-    rubric.criteria.forEach((c) => (m[c.id] = Number(c.weight || 1)));
-    return m;
-  }, [rubric.criteria]);
-
   const displayName =
     settings?.anonymizeTeams && team
       ? `Team ${team.id.slice(0, 4).toUpperCase()}`
@@ -173,19 +159,7 @@ function Page() {
     }
     setSubmitting(true);
     try {
-      const weightSum = Object.values(weights).reduce(
-        (a, b) => a + (b || 0),
-        0
-      );
-      const total = Object.values(scores).reduce(
-        (a, v) => a + Number(v || 0),
-        0
-      );
-      const weightedTotal =
-        Object.entries(scores).reduce(
-          (a, [k, v]) => a + Number(v || 0) * (weights[k] || 1),
-          0
-        ) / Math.max(1, weightSum);
+      const { total, weightedTotal } = computeReviewTotals(rubric, scores);
 
       const reviewId = `${team.id}__${judgeId}__finals`;
       await setDoc(
@@ -299,6 +273,7 @@ function Page() {
         <RubricForm
           criteria={rubric.criteria}
           scaleMax={rubric.scaleMax}
+          scoreMode={rubric.scoreMode}
           submitting={submitting}
           defaultScores={existing?.scores}
           defaultFeedback={existing?.feedback}

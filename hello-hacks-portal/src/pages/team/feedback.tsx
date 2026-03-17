@@ -5,8 +5,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import RoleGate from "@/components/RoleGate";
+import { normalizeRubric, rubricUsesPointTotals } from "@/lib/judging";
 import { useClientSession } from "@/lib/session";
 import { db, EVENT_ID } from "@/lib/firebase";
+import { Criterion, Rubric } from "@/lib/types";
 import {
   collection,
   doc,
@@ -14,9 +16,6 @@ import {
   query,
   where
 } from "firebase/firestore";
-
-type Criterion = { id: string; label: string; weight: number; maxScore?: number };
-type Rubric = { scaleMax: number; criteria: Criterion[] };
 
 type Review = {
   id: string;
@@ -114,20 +113,9 @@ function Page() {
       doc(db, "events", EVENT_ID, "rubric", "default"),
       (rSnap) => {
         if (rSnap.exists()) {
-          const data = rSnap.data() as any;
-          const scaleMax = Number(data.scaleMax || 5);
-          setRubric({
-            scaleMax,
-            criteria: (data.criteria || []).map((c: any) => ({
-              ...c,
-              maxScore: Math.max(
-                1,
-                Math.round(Number(c.maxScore ?? scaleMax) || scaleMax)
-              )
-            })) as Criterion[]
-          });
+          setRubric(normalizeRubric(rSnap.data() as Partial<Rubric>));
         } else {
-          setRubric({ scaleMax: 5, criteria: [] });
+          setRubric(normalizeRubric());
         }
         markReady("rubric");
       },
@@ -174,6 +162,7 @@ function Page() {
   const criterionMax = (c: Criterion) =>
     Math.max(1, Math.round(Number(c.maxScore ?? rubric?.scaleMax ?? 5) || 5));
   const current = tab === "prelim" ? prelimReviews : finalsReviews;
+  const pointTotals = rubricUsesPointTotals(rubric);
 
   const sorted = useMemo(
     () =>
@@ -334,9 +323,10 @@ function Page() {
         ) : (
           <>
             <div className="mb-2 text-xs text-gray-500 dark:text-gray-400">
-              Each criterion uses its own score range (0 to max). Weighted score
-              is the average of (criterion score × weight). Feedback is shown
-              exactly as judges entered it.
+              {pointTotals
+                ? "Each criterion uses its own score range (0 to max). Score totals reflect the direct category points entered by judges."
+                : "Each criterion uses its own score range (0 to max). Weighted score is the average of (criterion score × weight)."}{" "}
+              Feedback is shown exactly as judges entered it.
             </div>
 
             <div className="overflow-x-auto">
@@ -353,7 +343,9 @@ function Page() {
                       </th>
                     ))}
                     <th className="px-3 py-2 text-left">Raw Total</th>
-                    <th className="px-3 py-2 text-left">Weighted Total</th>
+                    <th className="px-3 py-2 text-left">
+                      {pointTotals ? "Score Total" : "Weighted Total"}
+                    </th>
                     <th className="px-3 py-2 text-left">Feedback</th>
                     <th className="px-3 py-2 text-left">Submitted</th>
                   </tr>
@@ -378,7 +370,9 @@ function Page() {
                         {Number(r.total || 0).toFixed(2)}
                       </td>
                       <td className="px-3 py-2">
-                        {Number(r.weightedTotal || 0).toFixed(2)}
+                        {Number(pointTotals ? r.total : r.weightedTotal || 0).toFixed(
+                          2
+                        )}
                       </td>
                       <td className="px-3 py-2">
                         <div className="max-h-48 overflow-auto whitespace-pre-wrap text-[11px] leading-relaxed text-gray-800 dark:text-gray-100 border border-gray-200/70 dark:border-white/10 rounded-md px-2 py-1 bg-gray-50/70 dark:bg-white/5">
