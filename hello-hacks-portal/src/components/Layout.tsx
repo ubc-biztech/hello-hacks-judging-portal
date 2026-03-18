@@ -450,7 +450,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       </div>
 
       <div className="relative z-10 xl:pl-[18.5rem]">
-        <main className="mx-auto max-w-7xl px-3 pb-10 pt-4 sm:px-6 lg:px-8">
+        <main className="mx-auto max-w-7xl px-3 pb-10 pt-6 sm:px-6 sm:pt-7 lg:px-8">
           {children}
         </main>
       </div>
