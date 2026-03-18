@@ -14,7 +14,6 @@ import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
 import {
   AdjustmentsHorizontalIcon,
   ArrowRightOnRectangleIcon,
-  Bars3Icon,
   ChartBarSquareIcon,
   ClipboardDocumentCheckIcon,
   ClipboardDocumentListIcon,
@@ -29,6 +28,7 @@ import {
   XMarkIcon
 } from "@heroicons/react/24/outline";
 import { useClientSession, clearSession, type Session } from "@/lib/session";
+import { DEFAULT_EVENT_NAME, getEventInitials } from "@/lib/event";
 import { db, EVENT_ID } from "@/lib/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 
@@ -45,12 +45,6 @@ type NavItem = {
 type NavSection = {
   name: string;
   items: NavItem[];
-};
-
-type PageInfo = {
-  match: RegExp;
-  title: string;
-  subtitle: string;
 };
 
 const NAV_BY_ROLE: Record<Role, NavSection[]> = {
@@ -145,7 +139,14 @@ const NAV_BY_ROLE: Record<Role, NavSection[]> = {
           href: "/judge",
           hint: "Review your prelim queue",
           icon: QueueListIcon,
-          match: /^\/judge(?:\/(?!finals(?:\/|$))[^/]+)?$/
+          match: /^\/judge(?:\/(?!finals(?:\/|$)|rubric(?:\/|$))[^/]+)?$/
+        },
+        {
+          name: "Rubric",
+          href: "/judge/rubric",
+          hint: "Scoring reference",
+          icon: ClipboardDocumentCheckIcon,
+          match: /^\/judge\/rubric$/
         },
         {
           name: "Finals Queue",
@@ -215,99 +216,6 @@ const NAV_BY_ROLE: Record<Role, NavSection[]> = {
   ]
 };
 
-const PAGE_INFO: PageInfo[] = [
-  {
-    match: /^\/auth$/,
-    title: "Sign In",
-    subtitle: "Choose your role and continue with your access code."
-  },
-  {
-    match: /^\/admin$/,
-    title: "Admin Console",
-    subtitle: "Event configuration, assignments, and review oversight."
-  },
-  {
-    match: /^\/admin\/settings$/,
-    title: "Event Settings",
-    subtitle: "Control phase, locks, visibility, and defaults."
-  },
-  {
-    match: /^\/admin\/judges$/,
-    title: "Judges",
-    subtitle: "Manage judge accounts and permissions."
-  },
-  {
-    match: /^\/admin\/teams$/,
-    title: "Teams",
-    subtitle: "Browse and edit all participating teams."
-  },
-  {
-    match: /^\/admin\/teams\/.+$/,
-    title: "Team Detail",
-    subtitle: "Review links, members, and submission data for one team."
-  },
-  {
-    match: /^\/admin\/assign$/,
-    title: "Assignments",
-    subtitle: "Configure and validate judge coverage."
-  },
-  {
-    match: /^\/admin\/rubric$/,
-    title: "Rubric",
-    subtitle: "Edit scoring criteria and weights."
-  },
-  {
-    match: /^\/admin\/links$/,
-    title: "Links Manager",
-    subtitle: "Maintain project, demo, and repository links."
-  },
-  {
-    match: /^\/admin\/finals$/,
-    title: "Finals Setup",
-    subtitle: "Select finalists and finals judge roster."
-  },
-  {
-    match: /^\/admin\/seed-teams$/,
-    title: "Seed Teams",
-    subtitle: "Bulk import and preparation workflow."
-  },
-  {
-    match: /^\/judge$/,
-    title: "Assigned Teams",
-    subtitle: "Complete your preliminary team reviews."
-  },
-  {
-    match: /^\/judge\/finals$/,
-    title: "Finals Queue",
-    subtitle: "Track and complete finals judging assignments."
-  },
-  {
-    match: /^\/judge\/finals\/.+$/,
-    title: "Finals Team Review",
-    subtitle: "Submit final-round scores and rationale."
-  },
-  {
-    match: /^\/judge\/[^/]+$/,
-    title: "Team Review",
-    subtitle: "Score and submit feedback for this team."
-  },
-  {
-    match: /^\/submit$/,
-    title: "Team Submission",
-    subtitle: "Update your project links, summary, and assets."
-  },
-  {
-    match: /^\/team\/feedback$/,
-    title: "My Feedback",
-    subtitle: "Read judge feedback for your team."
-  },
-  {
-    match: /^\/results$/,
-    title: "Results",
-    subtitle: "Live standings, coverage, and score breakdowns."
-  }
-];
-
 function roleFromSession(session: Session | null): Role {
   return session?.role ?? "guest";
 }
@@ -337,6 +245,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { ready, session } = useClientSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [eventName, setEventName] = useState(DEFAULT_EVENT_NAME);
   const [phase, setPhase] = useState("");
   const [showTeamFeedback, setShowTeamFeedback] = useState(true);
 
@@ -345,12 +254,18 @@ export default function Layout({ children }: { children: ReactNode }) {
       doc(db, "events", EVENT_ID),
       (snap) => {
         const data = snap.exists()
-          ? (snap.data() as { phase?: string; showTeamFeedback?: boolean })
+          ? (snap.data() as {
+              name?: string;
+              phase?: string;
+              showTeamFeedback?: boolean;
+            })
           : undefined;
+        setEventName(data?.name?.trim() || DEFAULT_EVENT_NAME);
         setPhase(data?.phase || "");
         setShowTeamFeedback(data?.showTeamFeedback !== false);
       },
       () => {
+        setEventName(DEFAULT_EVENT_NAME);
         setPhase("");
         setShowTeamFeedback(true);
       }
@@ -384,10 +299,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       })
     }));
   }, [role, showJudgeFinals, showTeamFeedback]);
-  const flatItems = sections.flatMap((section) => section.items);
-  const activeItem = flatItems.find((item) => item.match.test(path)) || null;
-  const pageInfo = PAGE_INFO.find((item) => item.match.test(path));
-  const pageTitle = pageInfo?.title || activeItem?.name || "TechStrat Portal";
+  const eventInitials = useMemo(() => getEventInitials(eventName), [eventName]);
 
   function signOut() {
     clearSession();
@@ -399,24 +311,26 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   const SidebarItems = ({ mobile = false }: { mobile?: boolean }) => (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between gap-3 px-1">
+      <div className="flex items-center justify-between gap-3 border-b border-white/[0.08] pb-5">
         <Link
           href={homeHrefForRole(role)}
           onClick={() => mobile && setSidebarOpen(false)}
-          className="inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2"
+          className="inline-flex items-center gap-3"
         >
-          <div className="grid size-8 place-items-center rounded-lg bg-cyan-400/20 text-xs font-bold text-cyan-200">
-            TS
+          <div className="grid size-10 place-items-center rounded-md bg-cyan-400/18 text-sm font-bold text-cyan-200">
+            {eventInitials}
           </div>
           <div>
-            <p className="text-sm font-semibold text-white">TechStrat</p>
-            <p className="text-[11px] text-slate-400">Judging Portal</p>
+            <p className="text-base font-semibold tracking-tight text-white">{eventName}</p>
+            <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">
+              Judging Portal
+            </p>
           </div>
         </Link>
         {mobile && (
           <button
             onClick={() => setSidebarOpen(false)}
-            className="rounded-lg border border-white/10 p-2 text-slate-300 hover:bg-white/5"
+            className="rounded-md border border-white/10 p-2 text-slate-300 hover:bg-white/5"
           >
             <span className="sr-only">Close menu</span>
             <XMarkIcon className="size-5" aria-hidden="true" />
@@ -424,13 +338,13 @@ export default function Layout({ children }: { children: ReactNode }) {
         )}
       </div>
 
-      <div className="mt-6 space-y-6 overflow-y-auto pr-1">
+      <div className="mt-6 flex-1 space-y-6 overflow-y-auto">
         {sections.map((section) => (
           <div key={section.name}>
-            <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
               {section.name}
             </p>
-            <ul className="space-y-1.5">
+            <ul className="space-y-1">
               {section.items.map((item) => {
                 const active = item.match.test(path);
                 return (
@@ -439,10 +353,10 @@ export default function Layout({ children }: { children: ReactNode }) {
                       href={item.href}
                       onClick={() => mobile && setSidebarOpen(false)}
                       className={[
-                        "group flex items-center gap-3 rounded-xl border px-3 py-2 transition",
+                        "group flex items-center gap-3 rounded-md px-3 py-2.5 transition",
                         active
-                          ? "border-cyan-300/40 bg-cyan-300/10 text-white shadow-[0_0_0_1px_rgba(103,232,249,0.08)]"
-                          : "border-transparent text-slate-300 hover:border-white/10 hover:bg-white/5 hover:text-white"
+                          ? "bg-white/[0.05] text-white"
+                          : "text-slate-300 hover:bg-white/[0.03] hover:text-white"
                       ].join(" ")}
                     >
                       <item.icon
@@ -465,7 +379,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         ))}
       </div>
 
-      <div className="mt-6 rounded-2xl border border-white/10 bg-black/30 p-3">
+      <div className="mt-6 border-t border-white/[0.08] pt-5">
         <div className="flex items-center justify-between gap-2">
           <div>
             <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">
@@ -475,14 +389,14 @@ export default function Layout({ children }: { children: ReactNode }) {
               {accountLabel}
             </p>
           </div>
-          <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-cyan-200">
+          <span className="rounded-md border border-cyan-300/20 bg-cyan-300/[0.08] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-cyan-200">
             {accountRole}
           </span>
         </div>
         {ready && session ? (
           <button
             onClick={signOut}
-            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-100 transition hover:bg-white/10"
+            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md border border-white/10 bg-white/[0.04] px-3 py-2.5 text-xs font-semibold text-slate-100 transition hover:bg-white/[0.08]"
           >
             <ArrowRightOnRectangleIcon className="size-4" />
             Sign Out
@@ -491,7 +405,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           <Link
             href="/auth"
             onClick={() => mobile && setSidebarOpen(false)}
-            className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-100 transition hover:bg-white/10"
+            className="mt-4 inline-flex w-full items-center justify-center rounded-md border border-white/10 bg-white/[0.04] px-3 py-2.5 text-xs font-semibold text-slate-100 transition hover:bg-white/[0.08]"
           >
             Sign In
           </Link>
@@ -501,11 +415,9 @@ export default function Layout({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="relative min-h-dvh overflow-hidden bg-[#05070d] text-slate-100">
+    <div className="relative min-h-dvh overflow-hidden bg-[#050505] text-slate-100">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-24 top-0 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
-        <div className="absolute -right-20 top-24 h-72 w-72 rounded-full bg-indigo-500/10 blur-3xl" />
-        <div className="absolute bottom-0 left-1/4 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl" />
+        <div className="absolute inset-x-0 top-0 h-40 bg-[linear-gradient(180deg,rgba(255,255,255,0.025),transparent)]" />
       </div>
 
       <Dialog
@@ -522,66 +434,23 @@ export default function Layout({ children }: { children: ReactNode }) {
             transition
             className="relative mr-12 flex w-full max-w-sm transform flex-1 transition duration-200 data-[closed]:-translate-x-full"
           >
-            <div className="m-3 flex w-full grow rounded-3xl border border-white/10 bg-[#0a111f]/95 p-4 shadow-2xl shadow-black/40">
+            <div className="m-0 flex w-full grow border-r border-white/10 bg-[#0b0b0c]/98 p-5 shadow-2xl shadow-black/40">
               <SidebarItems mobile />
             </div>
           </DialogPanel>
         </div>
       </Dialog>
 
-      <div className="hidden xl:fixed xl:inset-y-0 xl:z-40 xl:flex xl:w-[22rem] xl:flex-col">
-        <div className="m-4 flex grow rounded-3xl border border-white/10 bg-[#0a111f]/90 p-4 shadow-2xl shadow-black/40 backdrop-blur-xl">
+      <div className="hidden xl:fixed xl:inset-y-0 xl:left-0 xl:z-40 xl:flex xl:w-[18.5rem] xl:flex-col">
+        <div className="flex grow border-r border-white/10 bg-[#0b0b0c]/94 px-5 py-6 shadow-[18px_0_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
           <div className="w-full">
             <SidebarItems />
           </div>
         </div>
       </div>
 
-      <div className="relative z-10 xl:pl-[22rem]">
-        <div className="sticky top-0 z-30 px-3 pb-2 pt-3 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between rounded-2xl border border-white/10 bg-black/30 px-3 backdrop-blur-xl sm:px-4">
-            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-              <button
-                type="button"
-                onClick={() => setSidebarOpen(true)}
-                className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/5 p-2 text-slate-200 hover:bg-white/10 xl:hidden"
-              >
-                <span className="sr-only">Open sidebar</span>
-                <Bars3Icon className="size-5" aria-hidden="true" />
-              </button>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-slate-100 sm:text-base">
-                  {pageTitle}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 sm:gap-3">
-              <span className="hidden rounded-full border border-cyan-300/30 bg-cyan-300/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-cyan-200 sm:inline-flex">
-                {accountRole}
-              </span>
-              {ready && session ? (
-                <button
-                  onClick={signOut}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-100 transition hover:bg-white/10"
-                >
-                  <ArrowRightOnRectangleIcon className="size-4" />
-                  <span className="hidden sm:inline">Sign Out</span>
-                  <span className="sm:hidden">Out</span>
-                </button>
-              ) : (
-                <Link
-                  href="/auth"
-                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-100 transition hover:bg-white/10"
-                >
-                  Sign In
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <main className="mx-auto max-w-7xl px-3 pb-10 sm:px-6 lg:px-8">
+      <div className="relative z-10 xl:pl-[18.5rem]">
+        <main className="mx-auto max-w-7xl px-3 pb-10 pt-4 sm:px-6 lg:px-8">
           {children}
         </main>
       </div>

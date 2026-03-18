@@ -1,16 +1,21 @@
 export type Criterion = {
   id: string;
   label: string;
+  description?: string;
   weight: number;
   maxScore?: number;
 };
-export type Rubric = { name: string; scaleMax: number; criteria: Criterion[] };
+export type Rubric = {
+  name: string;
+  scaleMax: number;
+  criteria: Criterion[];
+  scoreMode?: "points" | "weighted";
+};
 
 export type Team = {
   id: string;
   name: string;
   members: string[];
-  techStack: string[];
   github?: string;
   devpost?: string;
   description?: string;

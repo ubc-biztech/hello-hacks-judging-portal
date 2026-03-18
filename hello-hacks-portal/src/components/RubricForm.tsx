@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Criterion } from "@/lib/types";
-
-function criterionMax(c: Criterion, fallback: number) {
-  return Math.max(1, Math.round(Number(c.maxScore ?? fallback ?? 5) || 5));
-}
+import {
+  criterionMax,
+  rubricTotalMax,
+  rubricUsesPointTotals
+} from "@/lib/judging";
 
 function clampScore(value: number, max: number) {
   const n = Number(value);
@@ -36,6 +37,8 @@ export default function RubricForm({
 }) {
   const [scores, setScores] = useState<Record<string, number>>({});
   const [feedback, setFeedback] = useState("");
+  const pointTotals = rubricUsesPointTotals({ criteria, scaleMax });
+  const totalMax = rubricTotalMax({ criteria, scaleMax });
 
   useEffect(() => {
     const s: Record<string, number> = {};
@@ -63,6 +66,24 @@ export default function RubricForm({
       }}
       className="space-y-6"
     >
+      <div className="rounded-2xl border border-white/10 bg-[#0b1221]/70 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold text-slate-100">
+              Scorecard Overview
+            </div>
+            <p className="mt-1 text-xs text-slate-400">
+              {pointTotals
+                ? `This rubric scores directly in points for a total of ${totalMax}.`
+                : "Each criterion uses its own score range and weight."}
+            </p>
+          </div>
+          <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-200">
+            Total / {totalMax}
+          </span>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {criteria.map((c) => {
           const max = criterionMax(c, scaleMax);
@@ -75,11 +96,19 @@ export default function RubricForm({
               className="rounded-xl border border-gray-200 p-4 dark:border-white/10"
             >
               <div className="mb-2 flex items-center justify-between">
-                <div className="font-medium text-gray-900 dark:text-white">
-                  {c.label}
+                <div>
+                  <div className="font-medium text-gray-900 dark:text-white">
+                    {c.label}
+                  </div>
+                  {c.description && (
+                    <p className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
+                      {c.description}
+                    </p>
+                  )}
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  Weight: {c.weight}
+                <div className="text-right text-xs text-gray-500 dark:text-gray-400">
+                  <div>Max {max}</div>
+                  {!pointTotals && <div>Weight {c.weight}</div>}
                 </div>
               </div>
 

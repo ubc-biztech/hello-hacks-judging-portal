@@ -14,13 +14,12 @@ body,
 body {
   font-family: "Avenir Next", "Nunito Sans", "Segoe UI", sans-serif;
   background:
-    radial-gradient(60rem 40rem at 10% -10%, rgba(34, 211, 238, 0.11), transparent 55%),
-    radial-gradient(50rem 36rem at 100% 0%, rgba(99, 102, 241, 0.1), transparent 60%),
-    linear-gradient(180deg, #05070d 0%, #060a12 38%, #04070d 100%);
-  color: #dbe5f5;
+    radial-gradient(72rem 48rem at 50% -18%, rgba(255, 255, 255, 0.035), transparent 58%),
+    linear-gradient(180deg, #050505 0%, #080808 42%, #0a0a0a 100%);
+  color: #e5e7eb;
 }
 
 ::selection {
-  background: rgba(103, 232, 249, 0.28);
-  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fafafa;
 }

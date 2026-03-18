@@ -7,6 +7,7 @@ import { db, EVENT_ID } from "@/lib/firebase";
 import {
   addDoc,
   collection,
+  deleteField,
   deleteDoc,
   doc,
   getDocs,
@@ -22,12 +23,15 @@ type Team = {
   id: string;
   name: string;
   members: string[];
-  techStack: string[];
   teamCode?: string;
   github?: string;
   devpost?: string;
   description?: string;
 };
+
+type AdminSession = {
+  adminCode?: string;
+} | null;
 
 export default function AdminTeams() {
   return (
@@ -43,7 +47,7 @@ function Page() {
   const [list, setList] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ name: "", members: "", teamCode: "" });
-  const admin = getSession() as any;
+  const admin = getSession() as AdminSession;
 
   async function load() {
     setLoading(true);
@@ -52,7 +56,20 @@ function Page() {
       orderBy("name")
     );
     const snap = await getDocs(qt);
-    setList(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));
+    setList(
+      snap.docs.map((d) => {
+        const data = d.data() as Partial<Team>;
+        return {
+          id: d.id,
+          name: data.name || "",
+          members: data.members || [],
+          teamCode: data.teamCode,
+          github: data.github,
+          devpost: data.devpost,
+          description: data.description
+        };
+      })
+    );
     setLoading(false);
   }
   useEffect(() => {
@@ -67,7 +84,6 @@ function Page() {
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean),
-      techStack: [],
       github: "",
       devpost: "",
       description: "",
@@ -76,7 +92,7 @@ function Page() {
       createdAt: serverTimestamp(),
       _adminJudgeId: "admin",
       _adminJudgeCode: admin?.adminCode || "ADMIN"
-    } as any);
+    });
     setForm({ name: "", members: "", teamCode: "" });
     await load();
   }
@@ -85,14 +101,14 @@ function Page() {
     await updateDoc(doc(db, "events", EVENT_ID, "teams", t.id), {
       name: t.name,
       members: t.members,
-      techStack: t.techStack,
       teamCode: t.teamCode || "",
       github: t.github || "",
       devpost: t.devpost || "",
       description: t.description || "",
+      techStack: deleteField(),
       _adminJudgeId: "admin",
       _adminJudgeCode: admin?.adminCode || "ADMIN"
-    } as any);
+    });
     await load();
   }
 
@@ -103,33 +119,38 @@ function Page() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl p-6">
-      <h1 className="text-2xl font-bold">Teams</h1>
+    <div className="max-w-6xl">
+      <h1 className="text-3xl font-semibold tracking-tight text-slate-50">Teams</h1>
 
-      <div className="mt-4 rounded-2xl border border-gray-200 p-4 dark:border-white/10">
-        <div className="text-lg font-semibold">Create Team</div>
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4">
+      <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.03] p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+        <div>
+          <div className="text-lg font-semibold text-slate-50">Create Team</div>
+          <p className="mt-1 text-sm text-slate-400">
+            Add a team name, members, and an optional access code.
+          </p>
+        </div>
+        <div className="mt-5 flex flex-col gap-3 xl:flex-row xl:items-center">
           <input
-            className="rounded-lg border border-gray-200 p-2 text-sm dark:border-white/10 dark:bg-transparent"
+            className="h-11 min-w-0 flex-1 rounded-lg border border-white/10 bg-[#0b0b0c] px-4 text-sm text-slate-100 placeholder:text-slate-500 focus:border-white/20 focus:outline-none"
             placeholder="Team Name"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
           <input
-            className="rounded-lg border border-gray-200 p-2 text-sm dark:border-white/10 dark:bg-transparent"
+            className="h-11 min-w-0 flex-[1.2] rounded-lg border border-white/10 bg-[#0b0b0c] px-4 text-sm text-slate-100 placeholder:text-slate-500 focus:border-white/20 focus:outline-none"
             placeholder="Members (comma-separated)"
             value={form.members}
             onChange={(e) => setForm({ ...form, members: e.target.value })}
           />
           <input
-            className="rounded-lg border border-gray-200 p-2 text-sm dark:border-white/10 dark:bg-transparent"
+            className="h-11 min-w-0 flex-1 rounded-lg border border-white/10 bg-[#0b0b0c] px-4 text-sm text-slate-100 placeholder:text-slate-500 focus:border-white/20 focus:outline-none"
             placeholder="Team Code (optional)"
             value={form.teamCode}
             onChange={(e) => setForm({ ...form, teamCode: e.target.value })}
           />
           <button
             onClick={createTeam}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white"
+            className="h-11 shrink-0 rounded-lg bg-white px-6 text-sm font-semibold text-black transition hover:bg-slate-200"
           >
             Create
           </button>
@@ -143,7 +164,6 @@ function Page() {
               <th className="px-4 py-2 text-left">Team</th>
               <th className="px-4 py-2 text-left">Members</th>
               <th className="px-4 py-2 text-left">Team Code</th>
-              <th className="px-4 py-2 text-left">Tech</th>
               <th className="px-4 py-2 text-left">Links</th>
               <th className="px-4 py-2"></th>
             </tr>
@@ -151,7 +171,7 @@ function Page() {
           <tbody>
             {loading && (
               <tr>
-                <td className="px-4 py-4" colSpan={6}>
+                <td className="px-4 py-4" colSpan={5}>
                   Loading…
                 </td>
               </tr>
@@ -169,7 +189,7 @@ function Page() {
               <tr>
                 <td
                   className="px-4 py-4 text-gray-500 dark:text-gray-400"
-                  colSpan={6}
+                  colSpan={5}
                 >
                   No teams yet.
                 </td>
@@ -193,7 +213,6 @@ function EditableTeamRow({
 }) {
   const [edit, setEdit] = useState<Team>({ ...t });
   const [member, setMember] = useState("");
-  const [techItem, setTechItem] = useState("");
 
   function addMember() {
     const m = member.trim();
@@ -205,18 +224,6 @@ function EditableTeamRow({
     setEdit((e) => ({
       ...e,
       members: e.members.filter((_, idx) => idx !== i)
-    }));
-  }
-  function addTech() {
-    const m = techItem.trim();
-    if (!m) return;
-    setEdit((e) => ({ ...e, techStack: [...(e.techStack || []), m] }));
-    setTechItem("");
-  }
-  function removeTech(i: number) {
-    setEdit((e) => ({
-      ...e,
-      techStack: e.techStack.filter((_, idx) => idx !== i)
     }));
   }
 
@@ -272,57 +279,24 @@ function EditableTeamRow({
       </td>
 
       <td className="px-4 py-3">
-        <div className="flex flex-wrap gap-2">
-          {(edit.techStack || []).map((m, i) => (
-            <span
-              key={i}
-              className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2 py-1 text-xs dark:border-white/10"
-            >
-              {m}
-              <button
-                className="text-gray-500 hover:text-rose-600"
-                onClick={() => removeTech(i)}
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-        <div className="mt-2 flex gap-2">
-          <input
-            className="min-w-0 flex-1 rounded-md border border-gray-200 px-2 py-1 text-sm dark:border-white/10 dark:bg-transparent"
-            placeholder="Add tech"
-            value={techItem}
-            onChange={(e) => setTechItem(e.target.value)}
-          />
-          <button
-            onClick={addTech}
-            className="rounded-md border border-gray-200 px-2 text-xs dark:border-white/10"
-          >
-            Add
-          </button>
-        </div>
-      </td>
-
-      <td className="px-4 py-3">
         <div className="grid gap-2">
           <input
             className="w-56 rounded-md border border-gray-200 px-2 py-1 text-xs font-mono dark:border-white/10 dark:bg-transparent"
             placeholder="GitHub URL"
-            value={(edit as any).github || ""}
+            value={edit.github || ""}
             onChange={(e) => setEdit({ ...edit, github: e.target.value })}
           />
           <input
             className="w-56 rounded-md border border-gray-200 px-2 py-1 text-xs font-mono dark:border-white/10 dark:bg-transparent"
             placeholder="Devpost URL"
-            value={(edit as any).devpost || ""}
+            value={edit.devpost || ""}
             onChange={(e) => setEdit({ ...edit, devpost: e.target.value })}
           />
           <textarea
             className="w-56 rounded-md border border-gray-200 px-2 py-1 text-xs dark:border-white/10 dark:bg-transparent"
             placeholder="Description"
             rows={3}
-            value={(edit as any).description || ""}
+            value={edit.description || ""}
             onChange={(e) => setEdit({ ...edit, description: e.target.value })}
           />
         </div>

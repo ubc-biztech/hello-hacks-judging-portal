@@ -2,8 +2,9 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { DEFAULT_EVENT_ID } from "./event";
 
-const EVENT_ID_ENV = process.env.NEXT_PUBLIC_EVENT_ID;
+const EVENT_ID_ENV = process.env.NEXT_PUBLIC_EVENT_ID?.trim();
 const API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 const AUTH_DOMAIN = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
@@ -42,4 +43,4 @@ export const db = getFirestore(app);
 
 export const storage = getStorage(app);
 
-export const EVENT_ID = EVENT_ID_ENV || "techstrat-2026 ";
+export const EVENT_ID = EVENT_ID_ENV || DEFAULT_EVENT_ID;

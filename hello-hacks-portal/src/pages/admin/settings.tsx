@@ -2,7 +2,8 @@
 
 import Layout from "@/components/Layout";
 import RoleGate from "@/components/RoleGate";
-import { useEffect, useState } from "react";
+import { DEFAULT_EVENT_NAME } from "@/lib/event";
+import { useEffect, useMemo, useState } from "react";
 import { db, EVENT_ID } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 
@@ -29,9 +30,9 @@ export default function AdminSettings() {
 }
 
 function Page() {
-  const ref = doc(db, "events", EVENT_ID);
+  const ref = useMemo(() => doc(db, "events", EVENT_ID), []);
   const [s, setS] = useState<Settings>({
-    name: "TechStrat",
+    name: DEFAULT_EVENT_NAME,
     requiredJudgeCount: 3,
     maxImages: 10,
     lockSubmissions: false,
@@ -46,10 +47,12 @@ function Page() {
   useEffect(() => {
     (async () => {
       const snap = await getDoc(ref);
-      if (snap.exists()) setS((prev) => ({ ...prev, ...(snap.data() as any) }));
+      if (snap.exists()) {
+        setS((prev) => ({ ...prev, ...(snap.data() as Settings) }));
+      }
       setLoading(false);
     })();
-  }, []);
+  }, [ref]);
 
   async function save() {
     await setDoc(ref, s, { merge: true });
@@ -59,8 +62,8 @@ function Page() {
   if (loading) return null;
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
-      <h1 className="text-2xl font-bold">Event Settings</h1>
+    <div className="max-w-3xl">
+      <h1 className="text-3xl font-semibold tracking-tight text-slate-50">Event Settings</h1>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
@@ -77,7 +80,10 @@ function Page() {
             className="mt-1 w-full rounded-lg border border-gray-200 p-2 text-sm dark:border-white/10 dark:bg-transparent"
             value={s.phase || "submission"}
             onChange={(e) =>
-              setS((v) => ({ ...v, phase: e.target.value as any }))
+              setS((v) => ({
+                ...v,
+                phase: e.target.value as Settings["phase"]
+              }))
             }
           >
             <option value="submission">Submission</option>

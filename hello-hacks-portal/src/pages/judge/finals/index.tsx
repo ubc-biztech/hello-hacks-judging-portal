@@ -116,9 +116,9 @@ function Page() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+    <div className="max-w-3xl">
+      <div className="mb-6">
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-50">
           Finals Judging
         </h1>
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -126,6 +126,7 @@ function Page() {
           {progress.total}
         </p>
       </div>
+
       <div className="grid grid-cols-1 gap-3">
         {teams.map((t) => {
           const done = judgedIds.has(t.id);

@@ -12,11 +12,11 @@ import {
   arrayRemove,
   arrayUnion,
   collection,
+  deleteField,
   deleteDoc,
   doc,
   getDoc,
   getDocs,
-  orderBy,
   query,
   updateDoc,
   where,
@@ -28,7 +28,6 @@ type Team = {
   id: string;
   name: string;
   members: string[];
-  techStack: string[];
   teamCode?: string;
   github?: string;
   devpost?: string;
@@ -179,11 +178,11 @@ function Page() {
       await updateDoc(doc(db, "events", EVENT_ID, "teams", edit.id), {
         name: edit.name,
         members: edit.members || [],
-        techStack: edit.techStack || [],
         teamCode: edit.teamCode || "",
         github: edit.github || "",
         devpost: edit.devpost || "",
         description: edit.description || "",
+        techStack: deleteField(),
         updatedAt: new Date()
       } as any);
       setTeam(edit);
@@ -227,7 +226,7 @@ function Page() {
   async function clearSubmission() {
     if (!team) return;
     const confirmed = confirm(
-      `Clear submission for "${team.name}"?\n\nThis will:\n• Delete uploaded images\n• Reset GitHub, Devpost, Description\n• Clear Tech Stack\n\nTeam name, members, and team code remain.`
+      `Clear submission for "${team.name}"?\n\nThis will:\n• Delete uploaded images\n• Reset GitHub, Devpost, Description\n\nTeam name, members, and team code remain.`
     );
     if (!confirmed) return;
 
@@ -239,8 +238,8 @@ function Page() {
         github: "",
         devpost: "",
         description: "",
-        techStack: [],
         imageUrls: [],
+        techStack: deleteField(),
         updatedAt: new Date()
       } as any);
 
@@ -249,7 +248,6 @@ function Page() {
         github: "",
         devpost: "",
         description: "",
-        techStack: [],
         imageUrls: [],
         updatedAt: new Date() as any
       };
@@ -358,11 +356,11 @@ function Page() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl p-6">
+    <div className="max-w-6xl">
       {/* Header */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-50">
             Team: {team.name}
           </h1>
           <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -486,14 +484,6 @@ function Page() {
                 values={edit.members || []}
                 onChange={(v) => setEdit({ ...edit, members: v })}
                 placeholder="Add member"
-              />
-            </Labeled>
-
-            <Labeled label="Tech Stack">
-              <TagEditor
-                values={edit.techStack || []}
-                onChange={(v) => setEdit({ ...edit, techStack: v })}
-                placeholder="Add tech"
               />
             </Labeled>
 

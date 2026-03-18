@@ -2,10 +2,12 @@
 "use client";
 
 import { useRouter } from "next/router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Layout from "@/components/Layout";
 import RoleGate from "@/components/RoleGate";
 import { db, EVENT_ID } from "@/lib/firebase";
+import { computeReviewTotals, normalizeRubric } from "@/lib/judging";
+import { Rubric } from "@/lib/types";
 import {
   collection,
   doc,
@@ -22,14 +24,11 @@ type Team = {
   id: string;
   name: string;
   members?: string[];
-  techStack?: string[];
   github?: string;
   devpost?: string;
   description?: string;
   imageUrls?: string[];
 };
-
-type Criterion = { id: string; label: string; weight: number; maxScore?: number };
 
 export default function JudgeTeamPage() {
   return (
@@ -48,13 +47,7 @@ function Page() {
 
   const [settings, setSettings] = useState<any>(null);
   const [team, setTeam] = useState<Team | null>(null);
-  const [rubric, setRubric] = useState<{
-    criteria: Criterion[];
-    scaleMax: number;
-  }>({
-    criteria: [],
-    scaleMax: 5
-  });
+  const [rubric, setRubric] = useState<Rubric>(normalizeRubric());
   const [existing, setExisting] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const judgeId = ready && session?.role === "judge" ? session.judgeId : null;
@@ -84,21 +77,9 @@ function Page() {
     unsubs.push(
       onSnapshot(doc(db, "events", EVENT_ID, "rubric", "default"), (rSnap) => {
         if (rSnap.exists()) {
-          const d = rSnap.data() as any;
-          setRubric({
-            criteria: (d.criteria || []) as Criterion[],
-            scaleMax: Number(d.scaleMax || 5)
-          });
+          setRubric(normalizeRubric(rSnap.data() as Partial<Rubric>));
         } else {
-          setRubric({
-            criteria: [
-              { id: "innovation", label: "Innovation", weight: 1 },
-              { id: "technical", label: "Technical Complexity", weight: 1 },
-              { id: "usability", label: "Usability / UX", weight: 1 },
-              { id: "impact", label: "Impact / Value", weight: 1 }
-            ],
-            scaleMax: 5
-          });
+          setRubric(normalizeRubric());
         }
       })
     );
@@ -125,12 +106,6 @@ function Page() {
     };
   }, [ready, teamId, judgeId]);
 
-  const weights = useMemo<Record<string, number>>(() => {
-    const m: Record<string, number> = {};
-    rubric.criteria.forEach((c) => (m[c.id] = Number(c.weight || 1)));
-    return m;
-  }, [rubric.criteria]);
-
   const displayName =
     settings?.anonymizeTeams && team
       ? `Team ${team.id.slice(0, 4).toUpperCase()}`
@@ -149,19 +124,7 @@ function Page() {
     }
     setSubmitting(true);
     try {
-      const weightSum = Object.values(weights).reduce(
-        (a, b) => a + (b || 0),
-        0
-      );
-      const total = Object.values(scores).reduce(
-        (a, v) => a + Number(v || 0),
-        0
-      );
-      const weightedTotal =
-        Object.entries(scores).reduce(
-          (a, [k, v]) => a + Number(v || 0) * (weights[k] || 1),
-          0
-        ) / Math.max(1, weightSum);
+      const { total, weightedTotal } = computeReviewTotals(rubric, scores);
 
       const reviewId = `${team.id}__${judgeId}`;
       await setDoc(
@@ -199,11 +162,11 @@ function Page() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
+    <div className="max-w-3xl">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-50">
             {displayName}
           </h1>
           {settings?.phase && (
@@ -229,12 +192,6 @@ function Page() {
               <div>
                 <span className="font-medium">Members:</span>{" "}
                 {team.members.join(", ")}
-              </div>
-            ) : null}
-            {team.techStack?.length ? (
-              <div>
-                <span className="font-medium">Tech:</span>{" "}
-                {team.techStack.join(", ")}
               </div>
             ) : null}
             {team.github ? (

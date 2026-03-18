@@ -13,165 +13,7 @@ import {
   writeBatch
 } from "firebase/firestore";
 
-const RAW_TEAMS: { name: string; members: string[] }[] = [
-  {
-    name: "Stoat Solutions",
-    members: ["Julianna Huang", "Saren Vathanak", "Daniel Ma", "Braydon Newman"]
-  },
-  {
-    name: "GG Consulting",
-    members: ["Kezia Rijadi", "Newgen Bao", "Lynn Vu", "Megan Chan"]
-  },
-  {
-    name: "SRB Consulting",
-    members: ["Hayden Lam", "Zane Tennison", "Lucy Shen", "Deniz Emre"]
-  },
-  {
-    name: "Team Techrat",
-    members: ["Michael Weng", "Sherry Li", "Joanna Yin", "Kohen Mahler"]
-  },
-  {
-    name: "Team Nusa",
-    members: [
-      "Keanan Eldrian Wongso",
-      "Edbert Sunarpo",
-      "Clementie Freya Darmadji",
-      "Ibrasya Praditya Pohan"
-    ]
-  },
-  {
-    name: "HAE Consulting",
-    members: [
-      "Hannah Azad Manjiri",
-      "Emily Lu",
-      "Allison Tao",
-      "Eliana Barbosa"
-    ]
-  },
-  {
-    name: "NextStrat Consulting",
-    members: ["Alisa Miriev", "Henry Rankin", "Karen Zhao", "Andee Achacoso"]
-  },
-  {
-    name: "HAC Advisors",
-    members: ["Chau Thai", "Animish Gupta", "Herman Thinnd", "None"]
-  },
-  {
-    name: "Bussin' Consulting",
-    members: ["Kyle Pon", "Reid Muddiman", "Bao Nguyen", "Catherine Jiang"]
-  },
-  {
-    name: "JACS of all trades",
-    members: ["Jenise Yang", "Samantha Ng", "Aditya Garg", "Carter Jaquette"]
-  },
-  {
-    name: "Natural Intelliegence Strategy",
-    members: [
-      "Adamya Gupta",
-      "Jayant Mansharamani",
-      "Jun Ishihara",
-      "Anton Bersamira"
-    ]
-  },
-  {
-    name: "Smurfs",
-    members: ["Thomas Collins", "Issac Lee", "Ryan Kakavand", "Johan Mendoza"]
-  },
-  {
-    name: "The Charge Consultants",
-    members: [
-      "Nyunn Sint Htoo",
-      "Alexis Danielle Widjaja",
-      "Kezia Annabel",
-      "Melody Annabelle Chaidrata"
-    ]
-  },
-  {
-    name: "99P consulting",
-    members: ["Thomas Jin", "Athalia Setiawan", "Wilfred Onwudiwe"]
-  },
-  {
-    name: "Encore",
-    members: ["Iman Tuan", "Deeptti Venugopal", "Chloe Lin", "VJ Jhang"]
-  },
-  {
-    name: "AMGS",
-    members: ["Anneke Phillips", "Sohanna Bains", "Gong Ma"]
-  },
-  {
-    name: "ConsultLink",
-    members: ["Jacky Xue", "Aryaman Deora", "Divyansh Tiwari", "Victor Thai"]
-  },
-  {
-    name: "Batavia Solutions",
-    members: [
-      "Kenji Naim Hutama",
-      "Matthew Anderson Sulistio",
-      "Matheus Marco Gunawan",
-      "Emily Razali"
-    ]
-  },
-  {
-    name: "Pacific Strategy Group",
-    members: [
-      "Aayush Patel",
-      "Rahul Paul",
-      "Joshua Wasylin",
-      "David (Jinjiang) Jiang"
-    ]
-  },
-  {
-    name: "LastMinute Consultant",
-    members: ["Min Cho", "Vincent Luong", "Bowen Cui", "David Huang"]
-  },
-  {
-    name: "Matcha Metrics",
-    members: [
-      "Jiratip Pairotkijja (Mio)",
-      "Daniel Morgan",
-      "Theophile Cabre",
-      "Gabriel Su"
-    ]
-  },
-  {
-    name: "The Lightningbirds",
-    members: ["Joseph Bell", "Jagman Sidhu", "Caleab Onyango", "Khang Huynh"]
-  },
-  {
-    name: "Team 10",
-    members: ["Kai Wu", "Oakley Sun", "Elliot Goldstein", "Will Lourens"]
-  },
-  {
-    name: "True North Consulting",
-    members: [
-      "Jaipaul Dhaliwal",
-      "Muskan Bhatia",
-      "Tanay Mahendru",
-      "Josh Evangelista"
-    ]
-  },
-  {
-    name: "The Girlshift",
-    members: ["Aimee", "Kamila", "Jade", "Saliha"]
-  },
-  {
-    name: "Penguins of Madagascar",
-    members: [
-      "Tahsan Samin",
-      "Ahmad Khattab",
-      "Elimelech Tibuhinda",
-      "Nursultan Bekbossyn"
-    ]
-  },
-  {
-    name: "Pareto Solutions",
-    members: ["James Gan", "Spenser Lim", "Saad Mumtaz", "Matthew Tam"]
-  },
-  {
-    name: "Abhimanyu",
-    members: ["Kartikay Singh Rao"]
-  }
-];
+const RAW_TEAMS: { name: string; members: string[] }[] = [];
 
 function slugify(input: string) {
   return (
@@ -288,7 +130,6 @@ function Page() {
           {
             name: row.name,
             members: row.members,
-            techStack: [],
             github: "",
             devpost: "",
             description: "",
@@ -315,9 +156,9 @@ function Page() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="max-w-5xl">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-50">
           Seed Teams
         </h1>
         <div className="flex items-center gap-3">
@@ -338,6 +179,13 @@ function Page() {
           </button>
         </div>
       </div>
+
+      {plan.length === 0 && (
+        <div className="mb-6 rounded-2xl border border-dashed border-gray-300 px-4 py-3 text-sm text-gray-600 dark:border-white/15 dark:text-gray-400">
+          No seed data is configured. Add teams to `RAW_TEAMS` in this page or
+          replace this tool with an importer.
+        </div>
+      )}
 
       <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-white/10">
         <table className="min-w-full text-sm">

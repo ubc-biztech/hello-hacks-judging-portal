@@ -13,10 +13,9 @@ import {
   query
 } from "firebase/firestore";
 import { db, EVENT_ID } from "@/lib/firebase";
+import { normalizeRubric, rubricUsesPointTotals } from "@/lib/judging";
+import { Criterion, Rubric } from "@/lib/types";
 import { useClientSession } from "@/lib/session";
-
-type Criterion = { id: string; label: string; weight: number; maxScore?: number };
-type Rubric = { scaleMax: number; criteria: Criterion[] };
 
 type Review = {
   id: string;
@@ -84,20 +83,9 @@ export default function Results() {
 
     const unsubRubric = onSnapshot(rubricRef, (r) => {
       if (r.exists()) {
-        const data = r.data() as any;
-        const scaleMax = Number(data.scaleMax || 5);
-        setRubric({
-          scaleMax,
-          criteria: (data.criteria || []).map((c: any) => ({
-            ...c,
-            maxScore: Math.max(
-              1,
-              Math.round(Number(c.maxScore ?? scaleMax) || scaleMax)
-            )
-          })) as Criterion[]
-        });
+        setRubric(normalizeRubric(r.data() as Partial<Rubric>));
       } else {
-        setRubric({ scaleMax: 5, criteria: [] });
+        setRubric(normalizeRubric());
       }
     });
 
@@ -148,16 +136,19 @@ export default function Results() {
 
     // coverage-aware sort: avg (weighted) desc, then review count desc
     const req = Number(settings?.requiredJudgeCount ?? 3);
+    const pointTotals = rubricUsesPointTotals(rubric);
     const sorted = Object.values(agg)
       .map((r) => ({ ...r, meetsCoverage: r.count >= req }))
       .sort((a, b) => {
-        const aAvg = a.weightedTotal / Math.max(1, a.count);
-        const bAvg = b.weightedTotal / Math.max(1, b.count);
+        const aAvg =
+          (pointTotals ? a.total : a.weightedTotal) / Math.max(1, a.count);
+        const bAvg =
+          (pointTotals ? b.total : b.weightedTotal) / Math.max(1, b.count);
         if (bAvg !== aAvg) return bAvg - aAvg;
         return (b.count || 0) - (a.count || 0);
       });
     setRows(sorted);
-  }, [reviewsByTeam, tab, settings?.requiredJudgeCount]);
+  }, [reviewsByTeam, rubric, tab, settings?.requiredJudgeCount]);
 
   const reqCount = Number(settings?.requiredJudgeCount ?? 3);
 
@@ -167,6 +158,8 @@ export default function Results() {
       (tab === "finals" && settings.showResultsFinals === false && !isAdmin));
 
   const canShowDetails = isAdmin || allowJudgeSeeOthers;
+  const pointTotals = rubricUsesPointTotals(rubric);
+  const primaryMetricLabel = pointTotals ? "Avg Score" : "Avg (Weighted)";
 
   const visibleRows = rows.filter(
     (r) => !hideUnderCovered || r.count >= reqCount
@@ -183,14 +176,15 @@ export default function Results() {
     const header = [
       "Rank",
       "Team",
-      "AvgWeighted",
+      pointTotals ? "AvgScore" : "AvgWeighted",
       "AvgRaw",
       "ReviewCount",
       "TeamId"
     ];
     const lines = [header.join(",")];
     visibleRows.forEach((r, i) => {
-      const avgW = r.weightedTotal / Math.max(1, r.count);
+      const avgW =
+        (pointTotals ? r.total : r.weightedTotal) / Math.max(1, r.count);
       const avg = r.total / Math.max(1, r.count);
       const t = teams[r.teamId];
       lines.push(
@@ -294,10 +288,10 @@ export default function Results() {
 
   return (
     <Layout>
-      <div className="mx-auto max-w-6xl">
+      <div className="max-w-6xl">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-50">
               Results
             </h1>
             {settings?.phase && (
@@ -319,7 +313,7 @@ export default function Results() {
                     setTab(t);
                   }}
                   className={[
-                    "px-3 py-1.5 text-xs rounded-md",
+                    "rounded-md px-3 py-1.5 text-xs",
                     tab === t
                       ? "bg-indigo-600 text-white"
                       : "text-gray-700 dark:text-gray-300"
@@ -380,7 +374,7 @@ export default function Results() {
               <tr>
                 <th className="px-4 py-2 text-left">Rank</th>
                 <th className="px-4 py-2 text-left">Team</th>
-                <th className="px-4 py-2 text-left">Avg (Weighted)</th>
+                <th className="px-4 py-2 text-left">{primaryMetricLabel}</th>
                 <th className="px-4 py-2 text-left">Avg (Raw)</th>
                 <th className="px-4 py-2 text-left"># Reviews</th>
                 <th className="px-4 py-2 text-left"></th>
@@ -388,7 +382,9 @@ export default function Results() {
             </thead>
             <tbody>
               {visibleRows.map((r, i) => {
-                const avgW = r.weightedTotal / Math.max(1, r.count);
+                const avgW =
+                  (pointTotals ? r.total : r.weightedTotal) /
+                  Math.max(1, r.count);
                 const avg = r.total / Math.max(1, r.count);
                 const t = teams[r.teamId];
                 const isExpanded = expanded === r.teamId;
@@ -460,6 +456,7 @@ export default function Results() {
               (r) => (r.round || "prelim") === tab
             )}
             rubric={rubric}
+            pointTotals={pointTotals}
           />
         )}
 
@@ -490,11 +487,13 @@ export default function Results() {
 function Details({
   team,
   reviews,
-  rubric
+  rubric,
+  pointTotals
 }: {
   team: Team;
   reviews: Review[];
   rubric: Rubric | null;
+  pointTotals: boolean;
 }) {
   const crits = rubric?.criteria || [];
   const criterionMax = (c: Criterion) =>
@@ -534,7 +533,9 @@ function Details({
                 </th>
               ))}
               <th className="px-3 py-2 text-left">Raw</th>
-              <th className="px-3 py-2 text-left">Weighted</th>
+              <th className="px-3 py-2 text-left">
+                {pointTotals ? "Score" : "Weighted"}
+              </th>
               <th className="px-3 py-2 text-left">Feedback</th>
               <th className="px-3 py-2 text-left">Submitted</th>
             </tr>
@@ -555,7 +556,9 @@ function Details({
                 ))}
                 <td className="px-3 py-2">{Number(r.total || 0).toFixed(2)}</td>
                 <td className="px-3 py-2">
-                  {Number(r.weightedTotal || 0).toFixed(2)}
+                  {Number(pointTotals ? r.total : r.weightedTotal || 0).toFixed(
+                    2
+                  )}
                 </td>
                 <td className="px-3 py-2 max-w-[24rem]">
                   <div className="line-clamp-3" title={r.feedback || ""}>
@@ -586,8 +589,9 @@ function Details({
       {/* Tiny legend */}
       {crits.length > 0 && (
         <div className="mt-3 text-[11px] text-gray-500 dark:text-gray-400">
-          Each criterion uses its own score range (0 to max). “Weighted” is the
-          average of (criterion score × weight).
+          {pointTotals
+            ? "Each criterion uses its own score range (0 to max). The score column matches the direct category point total."
+            : "Each criterion uses its own score range (0 to max). “Weighted” is the average of (criterion score × weight)."}
         </div>
       )}
     </div>

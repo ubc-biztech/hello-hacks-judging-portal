@@ -84,10 +84,10 @@ function Page() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl p-6">
-      <h1 className="text-2xl font-bold">Links Manager</h1>
+    <div className="max-w-5xl">
+      <h1 className="text-3xl font-semibold tracking-tight text-slate-50">Links Manager</h1>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-4">
+      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-4">
         <select
           value={form.teamId}
           onChange={(e) => setForm((f) => ({ ...f, teamId: e.target.value }))}
