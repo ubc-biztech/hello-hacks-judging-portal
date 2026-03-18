@@ -28,7 +28,7 @@ import {
   XMarkIcon
 } from "@heroicons/react/24/outline";
 import { useClientSession, clearSession, type Session } from "@/lib/session";
-import { DEFAULT_EVENT_NAME, getEventInitials } from "@/lib/event";
+import { DEFAULT_EVENT_NAME } from "@/lib/event";
 import { db, EVENT_ID } from "@/lib/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 
@@ -227,13 +227,6 @@ function homeHrefForRole(role: Role) {
   return "/auth";
 }
 
-function roleTag(session: Session | null) {
-  if (!session) return "Guest";
-  if (session.role === "admin") return "Admin";
-  if (session.role === "judge") return "Judge";
-  return "Team";
-}
-
 function roleDisplayName(session: Session | null) {
   if (!session) return "Not signed in";
   if (session.role === "admin") return session.name || "Admin";
@@ -299,7 +292,6 @@ export default function Layout({ children }: { children: ReactNode }) {
       })
     }));
   }, [role, showJudgeFinals, showTeamFeedback]);
-  const eventInitials = useMemo(() => getEventInitials(eventName), [eventName]);
 
   function signOut() {
     clearSession();
@@ -307,7 +299,6 @@ export default function Layout({ children }: { children: ReactNode }) {
   }
 
   const accountLabel = useMemo(() => roleDisplayName(session), [session]);
-  const accountRole = useMemo(() => roleTag(session), [session]);
 
   const SidebarItems = ({ mobile = false }: { mobile?: boolean }) => (
     <div className="flex h-full flex-col">
@@ -315,11 +306,8 @@ export default function Layout({ children }: { children: ReactNode }) {
         <Link
           href={homeHrefForRole(role)}
           onClick={() => mobile && setSidebarOpen(false)}
-          className="inline-flex items-center gap-3"
+          className="inline-flex items-center"
         >
-          <div className="grid size-10 place-items-center rounded-md bg-cyan-400/18 text-sm font-bold text-cyan-200">
-            {eventInitials}
-          </div>
           <div>
             <p className="text-base font-semibold tracking-tight text-white">{eventName}</p>
             <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">
@@ -389,9 +377,6 @@ export default function Layout({ children }: { children: ReactNode }) {
               {accountLabel}
             </p>
           </div>
-          <span className="rounded-md border border-cyan-300/20 bg-cyan-300/[0.08] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-cyan-200">
-            {accountRole}
-          </span>
         </div>
         {ready && session ? (
           <button
