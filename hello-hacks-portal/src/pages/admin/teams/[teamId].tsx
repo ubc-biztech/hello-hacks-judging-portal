@@ -17,7 +17,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  orderBy,
   query,
   updateDoc,
   where,
@@ -357,11 +356,11 @@ function Page() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl p-6">
+    <div className="max-w-6xl">
       {/* Header */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-50">
             Team: {team.name}
           </h1>
           <p className="text-xs text-gray-500 dark:text-gray-400">

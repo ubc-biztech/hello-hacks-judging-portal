@@ -201,10 +201,10 @@ function Page() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
+    <div className="max-w-3xl">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-50">
             {displayName} (Finals)
           </h1>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">

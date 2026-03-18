@@ -109,35 +109,43 @@ function Page() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl p-6">
-      <h1 className="text-2xl font-bold">Judges</h1>
+    <div className="max-w-6xl">
+      <h1 className="text-3xl font-semibold tracking-tight text-slate-50">Judges</h1>
 
-      <div className="mt-4 rounded-2xl border border-gray-200 p-4 dark:border-white/10">
-        <div className="text-lg font-semibold">Create Judge</div>
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-5">
+      <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.03] p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-lg font-semibold text-slate-50">Create Judge</div>
+            <p className="mt-1 text-sm text-slate-400">
+              Add a judge with a name and access code.
+            </p>
+          </div>
+        </div>
+        <div className="mt-5 flex flex-col gap-3 xl:flex-row xl:items-center">
           <input
-            className="rounded-lg border border-gray-200 p-2 text-sm dark:border-white/10 dark:bg-transparent"
+            className="h-11 min-w-0 flex-1 rounded-lg border border-white/10 bg-[#0b0b0c] px-4 text-sm text-slate-100 placeholder:text-slate-500 focus:border-white/20 focus:outline-none"
             placeholder="Name"
             value={newJ.name}
             onChange={(e) => setNewJ({ ...newJ, name: e.target.value })}
           />
           <input
-            className="rounded-lg border border-gray-200 p-2 text-sm dark:border-white/10 dark:bg-transparent"
+            className="h-11 min-w-0 flex-1 rounded-lg border border-white/10 bg-[#0b0b0c] px-4 text-sm text-slate-100 placeholder:text-slate-500 focus:border-white/20 focus:outline-none"
             placeholder="Code"
             value={newJ.code}
             onChange={(e) => setNewJ({ ...newJ, code: e.target.value })}
           />
-          <label className="inline-flex items-center gap-2 text-sm">
+          <label className="inline-flex h-11 shrink-0 items-center gap-3 rounded-lg border border-white/10 bg-[#0f1012] px-4 text-sm text-slate-200">
             <input
               type="checkbox"
               checked={newJ.isAdmin}
               onChange={(e) => setNewJ({ ...newJ, isAdmin: e.target.checked })}
+              className="size-4 rounded border-white/20 bg-transparent text-white"
             />
             Admin
           </label>
           <button
             onClick={createJudge}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white"
+            className="h-11 shrink-0 rounded-lg bg-white px-6 text-sm font-semibold text-black transition hover:bg-slate-200"
           >
             Create
           </button>

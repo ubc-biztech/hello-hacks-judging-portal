@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import RoleGate from "@/components/RoleGate";
 import { db, EVENT_ID } from "@/lib/firebase";
-import { normalizeRubric } from "@/lib/judging";
+import {
+  normalizeRubric
+} from "@/lib/judging";
 import { Criterion, Rubric } from "@/lib/types";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 
@@ -76,43 +78,50 @@ function Page() {
   if (loading) return null;
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
-      <h1 className="text-2xl font-bold">Rubric</h1>
+    <div className="max-w-5xl">
+      <h1 className="text-3xl font-semibold tracking-tight text-slate-50">Rubric</h1>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div>
-          <label className="text-sm font-medium">Name</label>
-          <input
-            className="mt-1 w-full rounded-lg border border-gray-200 p-2 text-sm dark:border-white/10 dark:bg-transparent"
-            value={rubric.name}
-            onChange={(e) => setRubric((r) => ({ ...r, name: e.target.value }))}
-          />
-        </div>
-        <div>
-          <label className="text-sm font-medium">Default max score</label>
-          <input
-            type="number"
-            min={1}
-            className="mt-1 w-24 rounded-lg border border-gray-200 p-2 text-sm dark:border-white/10 dark:bg-transparent"
-            value={rubric.scaleMax}
-            onChange={(e) =>
-              setRubric((r) => ({
-                ...r,
-                scaleMax: Math.max(1, Math.round(Number(e.target.value || 1)))
-              }))
-            }
-          />
+      <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.03] p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_16rem]">
+          <div>
+            <label className="text-sm font-medium text-slate-200">Name</label>
+            <input
+              className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-[#0b0b0c] px-4 text-sm text-slate-100 placeholder:text-slate-500 focus:border-white/20 focus:outline-none"
+              value={rubric.name}
+              onChange={(e) => setRubric((r) => ({ ...r, name: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-200">Default max score</label>
+            <input
+              type="number"
+              min={1}
+              className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-[#0b0b0c] px-4 text-sm text-slate-100 focus:border-white/20 focus:outline-none"
+              value={rubric.scaleMax}
+              onChange={(e) =>
+                setRubric((r) => ({
+                  ...r,
+                  scaleMax: Math.max(1, Math.round(Number(e.target.value || 1)))
+                }))
+              }
+            />
+          </div>
         </div>
       </div>
 
-      <div className="mt-6">
-        <div className="mb-2 flex items-center justify-between">
-          <div className="text-lg font-semibold">Criteria</div>
+      <div className="mt-8">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <div className="text-xl font-semibold text-slate-50">Criteria</div>
+            <p className="mt-1 text-sm text-slate-400">
+              Define the categories judges will score against.
+            </p>
+          </div>
           <button
             onClick={addCrit}
-            className="rounded-lg border border-gray-200 px-3 py-1 text-sm dark:border-white/10"
+            className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-slate-100 transition hover:bg-white/[0.08]"
           >
-            Add
+            Add Criterion
           </button>
         </div>
 
@@ -120,46 +129,54 @@ function Page() {
           {rubric.criteria.map((c, i) => (
             <div
               key={c.id}
-              className="rounded-xl border border-gray-200 p-3 dark:border-white/10"
+              className="rounded-xl border border-white/10 bg-white/[0.03] p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]"
             >
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-12">
-                <div className="sm:col-span-5">
-                  <label className="text-xs font-medium">Label</label>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.6fr)_9rem_10rem_minmax(0,1fr)_auto]">
+                <div>
+                  <label className="text-xs font-medium uppercase tracking-[0.12em] text-slate-400">
+                    Label
+                  </label>
                   <input
-                    className="mt-1 w-full rounded-md border border-gray-200 px-2 py-1 text-sm dark:border-white/10 dark:bg-transparent"
+                    className="mt-2 h-10 w-full rounded-lg border border-white/10 bg-[#0b0b0c] px-3 text-sm text-slate-100 focus:border-white/20 focus:outline-none"
                     value={c.label}
                     onChange={(e) => updateCrit(i, { label: e.target.value })}
                   />
-                  <label className="mt-3 block text-xs font-medium">Description</label>
+                  <label className="mt-3 block text-xs font-medium uppercase tracking-[0.12em] text-slate-400">
+                    Description
+                  </label>
                   <textarea
                     rows={4}
-                    className="mt-1 w-full rounded-md border border-gray-200 px-2 py-1 text-sm dark:border-white/10 dark:bg-transparent"
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-[#0b0b0c] px-3 py-2 text-sm text-slate-100 focus:border-white/20 focus:outline-none"
                     value={c.description || ""}
                     onChange={(e) =>
                       updateCrit(i, { description: e.target.value })
                     }
                   />
                 </div>
-                <div className="sm:col-span-2">
-                  <label className="text-xs font-medium">Weight</label>
+                <div>
+                  <label className="text-xs font-medium uppercase tracking-[0.12em] text-slate-400">
+                    Weight
+                  </label>
                   <input
                     type="number"
                     min={0.1}
                     step="0.1"
-                    className="mt-1 w-24 rounded-md border border-gray-200 px-2 py-1 text-sm dark:border-white/10 dark:bg-transparent"
+                    className="mt-2 h-10 w-full rounded-lg border border-white/10 bg-[#0b0b0c] px-3 text-sm text-slate-100 focus:border-white/20 focus:outline-none"
                     value={c.weight}
                     onChange={(e) =>
                       updateCrit(i, { weight: Number(e.target.value || 1) })
                     }
                   />
                 </div>
-                <div className="sm:col-span-2">
-                  <label className="text-xs font-medium">Max score</label>
+                <div>
+                  <label className="text-xs font-medium uppercase tracking-[0.12em] text-slate-400">
+                    Max Score
+                  </label>
                   <input
                     type="number"
                     min={1}
                     step={1}
-                    className="mt-1 w-24 rounded-md border border-gray-200 px-2 py-1 text-sm dark:border-white/10 dark:bg-transparent"
+                    className="mt-2 h-10 w-full rounded-lg border border-white/10 bg-[#0b0b0c] px-3 text-sm text-slate-100 focus:border-white/20 focus:outline-none"
                     value={c.maxScore ?? rubric.scaleMax}
                     onChange={(e) =>
                       updateCrit(i, {
@@ -168,18 +185,20 @@ function Page() {
                     }
                   />
                 </div>
-                <div className="sm:col-span-3">
-                  <label className="text-xs font-medium">ID (read-only)</label>
+                <div>
+                  <label className="text-xs font-medium uppercase tracking-[0.12em] text-slate-400">
+                    ID
+                  </label>
                   <input
                     disabled
-                    className="mt-1 w-full rounded-md border border-gray-200 px-2 py-1 text-xs font-mono opacity-70 dark:border-white/10 dark:bg-transparent"
+                    className="mt-2 h-10 w-full rounded-lg border border-white/10 bg-[#0b0b0c] px-3 text-xs font-mono text-slate-500 opacity-80"
                     value={c.id}
                   />
                 </div>
-                <div className="flex items-end sm:justify-end">
+                <div className="flex items-end">
                   <button
                     onClick={() => removeCrit(i)}
-                    className="rounded-md bg-rose-600 px-3 py-1 text-xs font-semibold text-white"
+                    className="h-10 rounded-lg border border-rose-500/20 bg-rose-500/10 px-4 text-xs font-semibold text-rose-200 transition hover:bg-rose-500/15"
                   >
                     Delete
                   </button>
@@ -188,19 +207,19 @@ function Page() {
             </div>
           ))}
           {rubric.criteria.length === 0 && (
-            <div className="rounded-xl border border-dashed border-gray-200 p-6 text-sm text-gray-500 dark:border-white/10 dark:text-gray-400">
-              No criteria yet. Click “Add”.
+            <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-8 text-sm text-slate-400">
+              No criteria yet. Add your first scoring category.
             </div>
           )}
         </div>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-8">
         <button
           onClick={save}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white"
+          className="rounded-lg bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-slate-200"
         >
-          Save rubric
+          Save Rubric
         </button>
       </div>
     </div>

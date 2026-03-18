@@ -12,16 +12,13 @@ function Page() {
   const [rubric, setRubric] = useState<Rubric>(normalizeRubric());
 
   useEffect(() => {
-    const unsub = onSnapshot(
-      doc(db, "events", EVENT_ID, "rubric", "default"),
-      (snap) => {
-        if (snap.exists()) {
-          setRubric(normalizeRubric(snap.data() as Partial<Rubric>));
-        } else {
-          setRubric(normalizeRubric());
-        }
+    const unsub = onSnapshot(doc(db, "events", EVENT_ID, "rubric", "default"), (snap) => {
+      if (snap.exists()) {
+        setRubric(normalizeRubric(snap.data() as Partial<Rubric>));
+        return;
       }
-    );
+      setRubric(normalizeRubric());
+    });
 
     return () => unsub();
   }, []);
@@ -30,10 +27,10 @@ function Page() {
 
   return (
     <Layout>
-      <div className="mx-auto max-w-5xl space-y-6">
+      <div className="max-w-5xl space-y-6">
         <section className="rounded-3xl border border-white/10 bg-[#0b1221]/70 p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-50">
               Judging Rubric
             </h1>
             <span className="rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1 text-xs font-semibold text-amber-200">
@@ -55,11 +52,9 @@ function Page() {
                     /{criterion.maxScore}
                   </span>
                 </div>
-                {criterion.description && (
-                  <p className="mt-3 text-xs leading-5 text-slate-400">
-                    {criterion.description}
-                  </p>
-                )}
+                <p className="mt-3 text-xs leading-5 text-slate-400">
+                  {criterion.description}
+                </p>
               </div>
             ))}
           </div>

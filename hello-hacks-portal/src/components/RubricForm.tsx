@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { Criterion } from "@/lib/types";
-import { criterionMax, rubricUsesPointTotals } from "@/lib/judging";
+import {
+  criterionMax,
+  rubricTotalMax,
+  rubricUsesPointTotals
+} from "@/lib/judging";
 
 function clampScore(value: number, max: number) {
   const n = Number(value);
@@ -36,6 +40,7 @@ export default function RubricForm({
   const [scores, setScores] = useState<Record<string, number>>({});
   const [feedback, setFeedback] = useState("");
   const pointTotals = rubricUsesPointTotals({ criteria, scaleMax, scoreMode });
+  const totalMax = rubricTotalMax({ criteria, scaleMax });
 
   useEffect(() => {
     const s: Record<string, number> = {};
@@ -63,6 +68,24 @@ export default function RubricForm({
       }}
       className="space-y-6"
     >
+      <div className="rounded-2xl border border-white/10 bg-[#0b1221]/70 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold text-slate-100">
+              Scorecard Overview
+            </div>
+            <p className="mt-1 text-xs text-slate-400">
+              {pointTotals
+                ? `This rubric scores directly in points for a total of ${totalMax}.`
+                : "Each criterion uses its own score range and weight."}
+            </p>
+          </div>
+          <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-200">
+            Total / {totalMax}
+          </span>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {criteria.map((c) => {
           const max = criterionMax(c, scaleMax);

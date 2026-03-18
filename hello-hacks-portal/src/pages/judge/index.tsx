@@ -111,7 +111,7 @@ function Page() {
 
   return (
     <Layout>
-      <div className="mx-auto max-w-6xl space-y-6 p-2 sm:p-4">
+      <div className="max-w-6xl space-y-6">
         <section className="rounded-3xl border border-white/10 bg-black/30 p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -180,6 +180,7 @@ function Page() {
             )}
           </div>
         </section>
+
       </div>
     </Layout>
   );

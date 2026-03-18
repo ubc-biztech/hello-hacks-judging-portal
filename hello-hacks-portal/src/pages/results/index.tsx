@@ -284,10 +284,10 @@ export default function Results() {
 
   return (
     <Layout>
-      <div className="mx-auto max-w-6xl">
+      <div className="max-w-6xl">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-50">
               Results
             </h1>
             {settings?.phase && (
@@ -309,7 +309,7 @@ export default function Results() {
                     setTab(t);
                   }}
                   className={[
-                    "px-3 py-1.5 text-xs rounded-md",
+                    "rounded-md px-3 py-1.5 text-xs",
                     tab === t
                       ? "bg-indigo-600 text-white"
                       : "text-gray-700 dark:text-gray-300"

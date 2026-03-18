@@ -162,11 +162,11 @@ function Page() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
+    <div className="max-w-3xl">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-50">
             {displayName}
           </h1>
           {settings?.phase && (

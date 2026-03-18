@@ -361,10 +361,10 @@ function Page() {
   }
 
   return (
-    <div className="mx-auto max-w-[min(1400px,100%)] p-6">
+    <div className="max-w-[min(1400px,100%)]">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Assign Judges</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-50">Assign Judges</h1>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
             Coverage target per team:
             <input
@@ -410,7 +410,7 @@ function Page() {
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-4">
+      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-4">
         <input
           placeholder="Filter teams…"
           value={filter.searchTeam}

@@ -128,7 +128,7 @@ function Page() {
 
   return (
     <Layout>
-      <div className="mx-auto grid max-w-5xl gap-4 p-2 sm:p-4 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid max-w-5xl gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <section className="rounded-3xl border border-white/10 bg-black/30 p-5 sm:p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
             Team Workspace

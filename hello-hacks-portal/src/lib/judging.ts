@@ -44,10 +44,7 @@ export function criterionMax(
   criterion: Pick<Criterion, "maxScore">,
   fallback: number
 ) {
-  return Math.max(
-    1,
-    Math.round(Number(criterion.maxScore ?? fallback ?? 5) || 5)
-  );
+  return Math.max(1, Math.round(Number(criterion.maxScore ?? fallback ?? 5) || 5));
 }
 
 export function normalizeRubric(input?: Partial<Rubric> | null): Rubric {
@@ -68,7 +65,10 @@ export function normalizeRubric(input?: Partial<Rubric> | null): Rubric {
     input.criteria.every((criterion) => {
       const id = (criterion.id || "").trim().toLowerCase();
       const label = (criterion.label || "").trim().toLowerCase();
-      return legacyTemplateIds.has(id) || legacyTemplateLabels.has(label);
+      return (
+        legacyTemplateIds.has(id) ||
+        legacyTemplateLabels.has(label)
+      );
     });
 
   if (looksLikeLegacyTemplate) {
