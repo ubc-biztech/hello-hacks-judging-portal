@@ -14,6 +14,7 @@ import { Dialog, DialogBackdrop, DialogPanel } from "@headlessui/react";
 import {
   AdjustmentsHorizontalIcon,
   ArrowRightOnRectangleIcon,
+  Bars3Icon,
   ChartBarSquareIcon,
   ClipboardDocumentCheckIcon,
   ClipboardDocumentListIcon,
@@ -292,6 +293,9 @@ export default function Layout({ children }: { children: ReactNode }) {
       })
     }));
   }, [role, showJudgeFinals, showTeamFeedback]);
+  const flatItems = sections.flatMap((section) => section.items);
+  const activeItem = flatItems.find((item) => item.match.test(path)) || null;
+  const pageTitle = activeItem?.name || eventName;
 
   function signOut() {
     clearSession();
@@ -435,6 +439,26 @@ export default function Layout({ children }: { children: ReactNode }) {
       </div>
 
       <div className="relative z-10 xl:pl-[18.5rem]">
+        <div className="sticky top-0 z-30 border-b border-white/10 bg-[#050505]/92 backdrop-blur-xl xl:hidden">
+          <div className="flex items-center gap-3 px-3 py-3 sm:px-6">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(true)}
+              className="inline-flex items-center justify-center rounded-md border border-white/10 bg-white/[0.04] p-2 text-slate-100 transition hover:bg-white/[0.08]"
+            >
+              <span className="sr-only">Open navigation</span>
+              <Bars3Icon className="size-5" aria-hidden="true" />
+            </button>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-slate-100">
+                {pageTitle}
+              </p>
+              <p className="truncate text-[11px] uppercase tracking-[0.14em] text-slate-500">
+                {eventName}
+              </p>
+            </div>
+          </div>
+        </div>
         <main className="mx-auto max-w-7xl px-3 pb-10 pt-6 sm:px-6 sm:pt-7 lg:px-8">
           {children}
         </main>
