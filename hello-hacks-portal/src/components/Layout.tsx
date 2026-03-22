@@ -305,8 +305,13 @@ export default function Layout({ children }: { children: ReactNode }) {
   const accountLabel = useMemo(() => roleDisplayName(session), [session]);
 
   const SidebarItems = ({ mobile = false }: { mobile?: boolean }) => (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between gap-3 border-b border-white/[0.08] pb-5">
+    <div className="flex h-full w-full flex-col">
+      <div
+        className={[
+          "flex items-center justify-between border-b border-white/[0.08]",
+          mobile ? "gap-2 pb-4 pr-3" : "gap-3 pb-5"
+        ].join(" ")}
+      >
         <Link
           href={homeHrefForRole(role)}
           onClick={() => mobile && setSidebarOpen(false)}
@@ -322,7 +327,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         {mobile && (
           <button
             onClick={() => setSidebarOpen(false)}
-            className="rounded-md border border-white/10 p-2 text-slate-300 hover:bg-white/5"
+            className="rounded-md border border-white/10 p-1.5 text-slate-300 hover:bg-white/5"
           >
             <span className="sr-only">Close menu</span>
             <XMarkIcon className="size-5" aria-hidden="true" />
@@ -333,19 +338,25 @@ export default function Layout({ children }: { children: ReactNode }) {
       <div className="mt-6 flex-1 space-y-6 overflow-y-auto">
         {sections.map((section) => (
           <div key={section.name}>
-            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <p
+              className={[
+                "mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500",
+                mobile ? "pr-3" : ""
+              ].join(" ")}
+            >
               {section.name}
             </p>
-            <ul className="space-y-1">
+            <ul className={["space-y-1", mobile ? "w-full" : ""].join(" ")}>
               {section.items.map((item) => {
                 const active = item.match.test(path);
                 return (
-                  <li key={item.href}>
+                  <li key={item.href} className={mobile ? "w-full" : undefined}>
                     <Link
                       href={item.href}
                       onClick={() => mobile && setSidebarOpen(false)}
                       className={[
                         "group flex items-center gap-3 rounded-md px-3 py-2.5 transition",
+                        mobile ? "w-full" : "",
                         active
                           ? "bg-white/[0.05] text-white"
                           : "text-slate-300 hover:bg-white/[0.03] hover:text-white"
@@ -371,7 +382,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         ))}
       </div>
 
-      <div className="mt-6 border-t border-white/[0.08] pt-5">
+      <div className={["mt-6 border-t border-white/[0.08] pt-5", mobile ? "pr-3" : ""].join(" ")}>
         <div className="flex items-center justify-between gap-2">
           <div>
             <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">
@@ -416,16 +427,23 @@ export default function Layout({ children }: { children: ReactNode }) {
       >
         <DialogBackdrop
           transition
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-200 data-[closed]:opacity-0"
+          className="fixed inset-0 bg-[rgba(5,5,5,0.16)] backdrop-blur-xl transition-opacity duration-200 data-[closed]:opacity-0"
         />
         <div className="fixed inset-0 flex">
           <DialogPanel
             transition
-            className="relative mr-12 flex w-full max-w-sm transform flex-1 transition duration-200 data-[closed]:-translate-x-full"
+            className="relative flex h-full w-full transform transition duration-200 data-[closed]:-translate-x-full"
           >
-            <div className="m-0 flex w-full grow border-r border-white/10 bg-[#0b0b0c]/98 p-5 shadow-2xl shadow-black/40">
+            <div className="m-0 flex h-full w-[15.25rem] max-w-[calc(100vw-1rem)] shrink-0 border-r border-white/10 bg-[#0b0b0c]/96 py-5 pl-3 pr-0 shadow-[24px_0_60px_rgba(0,0,0,0.34)]">
               <SidebarItems mobile />
             </div>
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              className="flex-1 bg-transparent"
+            >
+              <span className="sr-only">Close navigation</span>
+            </button>
           </DialogPanel>
         </div>
       </Dialog>
